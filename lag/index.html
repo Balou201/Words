@@ -3,142 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GEL CRITIQUE - 100 000 MS</title>
+    <title>Générateur de Probabilité Instantanée</title>
     <style>
         body {
-            font-family: 'Consolas', 'Courier New', monospace;
-            background-color: #000000;
-            color: #ff0000; /* Rouge d'alerte */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #2c3e50; /* Bleu foncé */
+            color: #ecf0f1; /* Blanc cassé */
             display: flex;
             flex-direction: column;
             align-items: center;
             padding-top: 50px;
         }
         .container {
-            background-color: #111;
-            padding: 40px;
-            border: 5px solid #ff0000; /* Bordure critique rouge épaisse */
-            box-shadow: 0 0 30px rgba(255, 0, 0, 1);
-            width: 450px;
+            background-color: #34495e;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            width: 350px;
             text-align: center;
         }
         h1 {
-            color: #ff0000;
-            text-shadow: 0 0 10px #ff0000;
-            animation: alerte 0.5s infinite alternate; /* Ajout d'une animation d'alerte */
-        }
-        @keyframes alerte {
-            from { color: #ff0000; }
-            to { color: #8b0000; }
+            color: #1abc9c; /* Vert-bleu vif */
+            margin-bottom: 20px;
         }
         label {
             display: block;
-            margin: 15px 0;
+            margin-bottom: 15px;
+            font-size: 1.1em;
             font-weight: bold;
-            text-transform: uppercase;
         }
-        input[type="range"] {
-            width: 100%;
-            margin-bottom: 30px;
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #1abc9c;
+            border-radius: 5px;
+            font-size: 1.2em;
+            text-align: center;
+            background-color: #ecf0f1;
+            color: #2c3e50;
         }
         button {
-            background-color: #8b0000;
+            background-color: #e74c3c; /* Rouge */
             color: white;
-            border: 2px solid #ff0000;
-            padding: 15px;
-            border-radius: 0;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 20px;
+            font-size: 16px;
             width: 100%;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #c0392b;
         }
         #resultat {
             margin-top: 30px;
             padding: 20px;
-            border: 2px solid #ff0000;
-            background-color: #0a0a0a;
-            min-height: 50px;
-            color: #ffcccc;
-            text-align: left;
-        }
-        #valeurLag {
+            border-radius: 5px;
+            min-height: 60px;
+            font-size: 1.4em;
             font-weight: bold;
-            color: #ffffff;
-            font-size: 1.2em;
         }
-        
-        @keyframes clignoter {
-            0%   { opacity: 1; }
-            50%  { opacity: 0.1; }
-            100% { opacity: 1; }
+        .succes {
+            background-color: #27ae60; /* Vert succès */
+            color: white;
         }
-
-        .en-cours {
-            color: #ffff00; /* Jaune d'avertissement */
-            animation: clignoter 0.2s infinite;
-            font-size: 1.1em;
-            font-weight: bold;
+        .echec {
+            background-color: #f39c12; /* Jaune échec */
+            color: #34495e;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>&#x26A0; BLOCAGE DE 100 SECONDES INITIÉ &#x26A0;</h1>
+        <h1>🎲 Probabilité Rapide</h1>
 
-        <label for="lagRange">
-            DÉLAI DE BLOCAGE (Lag) : 
-            <span id="valeurLag">100000</span> ms
+        <label for="probabiliteInput">
+            Entrez la Probabilité (Ex: 1/6 ou 5/10)
         </label>
-        <input type="range" id="lagRange" min="0" max="100000" value="100000" step="1000">
+        <input type="text" id="probabiliteInput" value="1/2" placeholder="Ex: 1/2">
 
-        <button id="lagButton" onclick="simulerLag()">LANCER LA PROCÉDURE DE GEL CRITIQUE</button>
+        <button onclick="genererProbabilite()">LANCER L'EXPÉRIENCE INSTANTANÉE</button>
 
         <div id="resultat">
-            [SYSTÈME PRÊT] Attention : Un blocage de cette durée peut nécessiter de forcer la fermeture de l'onglet.
+            Entrez votre probabilité et cliquez !
         </div>
     </div>
 
     <script>
-        const lagRange = document.getElementById('lagRange');
-        const valeurLagSpan = document.getElementById('valeurLag');
-        const resultatDiv = document.getElementById('resultat');
-        const lagButton = document.getElementById('lagButton');
+        /**
+         * Calcule et simule la probabilité entrée par l'utilisateur.
+         */
+        function genererProbabilite() {
+            const input = document.getElementById('probabiliteInput').value;
+            const resultatDiv = document.getElementById('resultat');
+            resultatDiv.className = '';
+            
+            // 1. ANALYSE DE LA PROBABILITÉ
+            // Sépare la chaîne de caractères par le slash (/)
+            const parties = input.split('/');
+            
+            let numerateur, denominateur;
 
-        lagRange.addEventListener('input', function() {
-            valeurLagSpan.textContent = this.value;
-        });
-
-        // Fonction de blocage du thread principal (LE LAG EXTRÊME)
-        function bloquerExecution(dureeMs) {
-            const debut = Date.now();
-            // La boucle va tourner pendant 100 secondes (si choisi)
-            while (Date.now() < debut + dureeMs) {
-                // Le navigateur est gelé ici.
+            // Vérification simple du format
+            if (parties.length === 2) {
+                numerateur = parseFloat(parties[0]);
+                denominateur = parseFloat(parties[1]);
+            } else {
+                // Si l'utilisateur n'a pas utilisé de slash, on essaie de le traiter comme un pourcentage ou un nombre
+                const nombre = parseFloat(input);
+                if (!isNaN(nombre)) {
+                    // Si c'est un nombre valide, on le traite comme une probabilité décimale (ex: 0.25)
+                    numerateur = nombre;
+                    denominateur = 1;
+                } else {
+                    resultatDiv.innerHTML = "❌ Erreur : Format invalide. Utilisez 'Numerateur/Denominateur'.";
+                    return;
+                }
             }
-        }
 
-        function simulerLag() {
-            const dureeLag = parseInt(lagRange.value);
-            
-            lagButton.disabled = true;
-            lagButton.textContent = 'BLOCAGE ACTIF... (PATIENCE)';
-            resultatDiv.innerHTML = '<span class="en-cours">ATTENTION ! INTERFACE GELÉE POUR ' + (dureeLag / 1000).toFixed(1) + ' SECONDES !</span>';
-            
-            // On utilise un petit setTimeout pour que l'alerte CSS s'affiche AVANT de geler
-            setTimeout(() => {
-                const heureDebut = new Date();
-                bloquerExecution(dureeLag);
-                const heureFin = new Date();
+            // Vérification des valeurs
+            if (isNaN(numerateur) || isNaN(denominateur) || denominateur <= 0) {
+                resultatDiv.innerHTML = "❌ Erreur : Veuillez entrer des nombres valides. Le dénominateur doit être supérieur à zéro.";
+                return;
+            }
 
-                // Afficher le résultat après le dégel (si le navigateur n'a pas planté)
+            // Calcul de la probabilité décimale (entre 0 et 1)
+            const probabilite = numerateur / denominateur;
+            const pourcentage = (probabilite * 100).toFixed(2);
+            
+            if (probabilite > 1 || probabilite < 0) {
+                resultatDiv.innerHTML = `⚠️ Avertissement : La probabilité (${pourcentage} %) est hors de la plage normale [0% - 100%].`;
+                return;
+            }
+
+            // 2. SIMULATION INSTANTANÉE (Aucun lag ici !)
+            // Math.random() génère un nombre entre 0 (inclus) et 1 (exclus).
+            if (Math.random() < probabilite) {
+                // L'événement se produit
+                resultatDiv.classList.add('succes');
                 resultatDiv.innerHTML = `
-                    <p style="color: #00ff00;">✅ **DÉGEL SUCCÈS** : Le traitement a repris.</p>
-                    <p>Durée du blocage : <strong>${dureeLag} ms</strong> (${(dureeLag / 1000).toFixed(1)} secondes)</p>
-                    <p>Début : ${heureDebut.toLocaleTimeString()}<br>Fin : ${heureFin.toLocaleTimeString()}</p>
+                    <p>🎉 **SUCCÈS !** L'événement s'est produit.</p>
+                    <p style="font-size: 0.8em;">(Probabilité de ${input} soit ${pourcentage} %)</p>
                 `;
-                lagButton.disabled = false;
-                lagButton.textContent = 'LANCER LA PROCÉDURE DE GEL CRITIQUE';
-            }, 10);
+            } else {
+                // L'événement n'a pas lieu
+                resultatDiv.classList.add('echec');
+                resultatDiv.innerHTML = `
+                    <p>😩 **ÉCHEC.** L'événement n'a *pas* eu lieu.</p>
+                    <p style="font-size: 0.8em;">(Probabilité de ${input} soit ${pourcentage} %)</p>
+                `;
+            }
         }
     </script>
 
