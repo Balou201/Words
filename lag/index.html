@@ -2,15 +2,14 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Minecraft Wish Edition - Mini Jeu</title>
 <style>
-  html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#87ceeb; font-family:monospace; }
-  .ground { position:absolute; bottom:0; width:100%; height:150px; background:#228B22; }
-  .block { width:50px; height:50px; background:#8B4513; border:2px solid #654321; position:absolute; bottom:150px; }
-  .grass { width:50px; height:15px; background:#32CD32; position:absolute; bottom:150px; }
-  .player { width:30px; height:50px; background:#ff0000; position:absolute; bottom:200px; left:50px; }
-  .cloud { position:absolute; width:80px; height:40px; background:#fff; border-radius:50%; opacity:0.8; }
+  html,body {margin:0;padding:0;height:100%;overflow:hidden;background:#87ceeb;font-family:monospace;}
+  .ground {position:absolute;bottom:0;width:100%;height:150px;background:#228B22;}
+  .block {width:50px;height:50px;position:absolute;border:2px solid #654321;}
+  .player {width:30px;height:50px;position:absolute;background:#ff5555;bottom:200px;left:50px;}
+  .cloud {position:absolute;width:80px;height:40px;background:#fff;border-radius:50%;opacity:0.8;}
 </style>
 </head>
 <body>
@@ -19,67 +18,54 @@
 
 <script>
   const player = document.getElementById('player');
-  let posX = 50;
-  let posY = 200;
-  let velY = 0;
-  let jumping = false;
-  const gravity = 0.8;
-  const groundLevel = 200; // player bottom
+  let posX = 50, posY = 200, velY = 0, jumping = false;
+  const gravity = 0.8, groundLevel = 200;
 
-  // créer des blocs et herbes
-  for(let i=0;i<12;i++){
+  // créer des blocs “Wish” colorés
+  const colors = ['#8B4513','#D2691E','#A0522D','#CD853F','#C0C0C0'];
+  for(let i=0;i<15;i++){
     let block = document.createElement('div');
     block.className='block';
-    block.style.left=(i*55)+'px';
+    block.style.left = (i*55)+'px';
+    block.style.bottom = '150px';
+    block.style.background = colors[Math.floor(Math.random()*colors.length)];
     document.body.appendChild(block);
-
-    let grass = document.createElement('div');
-    grass.className='grass';
-    grass.style.left=(i*55)+'px';
-    document.body.appendChild(grass);
   }
 
-  // nuages
-  for(let i=0;i<5;i++){
+  // nuages aléatoires
+  for(let i=0;i<6;i++){
     let cloud = document.createElement('div');
     cloud.className='cloud';
-    cloud.style.left=Math.random()*window.innerWidth+'px';
-    cloud.style.top=Math.random()*100+'px';
+    cloud.style.left = Math.random()*window.innerWidth+'px';
+    cloud.style.top = Math.random()*100+'px';
     document.body.appendChild(cloud);
   }
 
-  // contrôler le joueur
+  // contrôles du joueur
   const keys = {};
   document.addEventListener('keydown', e=>keys[e.key]=true);
   document.addEventListener('keyup', e=>keys[e.key]=false);
 
   function gameLoop(){
-    // mouvement horizontal
-    if(keys['ArrowLeft']) posX -= 4;
-    if(keys['ArrowRight']) posX += 4;
-    
+    // mouvements horizontaux
+    if(keys['ArrowLeft']) posX -= 5;
+    if(keys['ArrowRight']) posX += 5;
+
     // saut
-    if(keys[' '] && !jumping){
-      velY = -12;
-      jumping = true;
-    }
+    if(keys[' '] && !jumping){ velY=-12; jumping=true; }
 
     // gravité
     velY += gravity;
     posY += velY;
 
-    // sol collision
-    if(posY > groundLevel){
-      posY = groundLevel;
-      velY = 0;
-      jumping = false;
-    }
+    // collision sol
+    if(posY>groundLevel){ posY=groundLevel; velY=0; jumping=false; }
 
     // appliquer positions
-    player.style.left = posX + 'px';
-    player.style.bottom = posY + 'px';
+    player.style.left = posX+'px';
+    player.style.bottom = posY+'px';
 
-    // bouger nuages
+    // nuages flottants
     document.querySelectorAll('.cloud').forEach(c=>{
       let left = parseFloat(c.style.left);
       left += 0.3;
