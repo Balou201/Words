@@ -3,90 +3,127 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>autreservice.example.com — Chargement (SIMULATION / FAKE)</title>
+<title>autreservice.example.com — Erreurs (SIMULATION / FAKE)</title>
 <style>
-  /* très basique, pas d'ombre */
-  html,body{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;color:#111}
-  .wrap{height:100%;display:flex;align-items:center;justify-content:center}
-  .card{width:92%;max-width:540px;padding:26px;border-radius:6px;background:#fff;border:1px solid #e6e6e6;text-align:center}
-  .site{font-weight:700;font-size:15px;margin-bottom:8px}
+  /* Très simple, pas d'ombres */
+  html,body{height:100%;margin:0;font-family:Consolas,Menlo,Monaco,monospace,Arial;background:#fafafa;color:#111}
+  .wrap{height:100%;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
+  .panel{width:100%;max-width:900px;padding:18px;border:1px solid #e6e6e6;background:#fff}
+  .site{font-weight:700;font-size:14px;margin-bottom:8px}
   .site span{color:#b91c1c;font-size:11px;margin-left:8px}
-  h1{margin:8px 0 18px;font-size:20px;font-weight:700}
-  p{margin:6px 0;color:#444;font-size:14px}
-  /* spinner simple */
-  .spinner{
-    width:48px;height:48px;border-radius:50%;
-    border:4px solid rgba(0,0,0,0.08);
-    border-top-color:#111;
-    margin:12px auto;
-    animation:spin 1s linear infinite;
+  h1{margin:6px 0 12px;font-size:18px}
+  .console{
+    background:#0b0b0b;color:#e6e6e6;padding:14px;height:360px;overflow:auto;
+    font-size:13px;line-height:1.4;border-radius:4px;border:1px solid #ddd;
   }
-  @keyframes spin{to{transform:rotate(360deg)}}
-
-  /* barre de progression bloquée */
-  .progress{width:100%;height:10px;background:#eee;border-radius:6px;overflow:hidden;margin-top:14px}
-  .bar{
-    height:100%;
-    width:99%;
-    max-width:99%;
-    background:linear-gradient(90deg,#111,#666);
-    transition:width 2s ease;
-  }
-  .percent{margin-top:8px;font-size:13px;color:#666}
-  .hint{margin-top:12px;font-size:12px;color:#888}
-
-  /* petit bouton pour révéler que c'est une simulation */
-  .reveal{
-    margin-top:14px;
-    display:inline-block;
-    padding:6px 10px;
-    border-radius:6px;
-    border:1px solid #ddd;
-    background:transparent;
-    font-size:13px;
-    cursor:pointer;
-  }
-
-  /* ne laisse pas selectionner le texte facilement */
+  .err{color:#ff6b6b}
+  .warn{color:#ffd166}
+  .info{color:#8ad4ff}
+  .time{color:#9aa3b2;margin-right:8px}
+  .btns{margin-top:12px}
+  button{padding:7px 10px;border-radius:4px;border:1px solid #ccc;background:transparent;cursor:pointer;font-family:inherit}
+  .note{margin-top:10px;font-size:12px;color:#666}
+  /* simple caret animation */
+  .caret{display:inline-block;width:8px;height:14px;background:#e6e6e6;vertical-align:middle;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  /* prevent selection to keep illusion */
   body,button{user-select:none}
 </style>
 </head>
 <body>
   <div class="wrap" role="main" aria-live="polite">
-    <div class="card" role="status" aria-label="Chargement en cours">
+    <div class="panel">
       <div class="site">autreservice.example.com <span>(SIMULATION / FAKE)</span></div>
-      <h1>Chargement en cours…</h1>
-      <p>Le site répond lentement. Veuillez patienter.</p>
+      <h1>Le site rencontre des erreurs — tentative de récupération</h1>
 
-      <div class="spinner" aria-hidden="true"></div>
+      <div class="console" id="console" aria-hidden="false"></div>
 
-      <div class="progress" aria-hidden="true">
-        <div class="bar"></div>
+      <div class="btns">
+        <button id="replay">Relancer la simulation</button>
+        <button id="stop">Arrêter (révéler)</button>
       </div>
-      <div class="percent"><strong>99%</strong> — Finalisation des ressources</div>
 
-      <div class="hint">Si la page reste bloquée, actualisez la page ou contactez l'administrateur.</div>
-
-      <button class="reveal" onclick="reveal()">C'est une simulation</button>
+      <div class="note">Ceci est une simulation locale qui affiche des erreurs fictives pour troller — pas d'interaction réseau réelle.</div>
     </div>
   </div>
 
 <script>
-  // Très simple : la barre reste à 99% (donc "bug")
-  // Le bouton révèle que c'est fake
-  function reveal(){
-    document.querySelector('.card').innerHTML =
-      '<div class="site">autreservice.example.com <span>(SIMULATION / FAKE)</span></div>'
-      + '<h1>Simulation arrêtée</h1>'
-      + '<p>Cette page était une simulation de chargement bloqué.</p>'
-      + '<p style="margin-top:12px;color:#666;font-size:13px">Utilise-la avec précaution.</p>';
+(function(){
+  const consoleEl = document.getElementById('console');
+  const errors = [
+    {t:"[ERR_NET_TIMEOUT]","m":"Request to https://api.autreservice.example.com/data timed out after 30000ms","c":"err"},
+    {t:"[500]","m":"Internal Server Error — /api/v2/user/profile","c":"err"},
+    {t:"[ERR_RESOURCE]","m":"Failed to load resource: the server responded with a status of 502 (Bad Gateway)","c":"err"},
+    {t:"[WARN]","m":"DeprecationWarning: fetch() will change behaviour in future releases","c":"warn"},
+    {t:"[ERR_AUTH]","m":"Invalid token provided for user session (token expired)","c":"err"},
+    {t:"[INFO]","m":"Retrying connection (attempt 3/5)","c":"info"},
+    {t:"[ERR_DB]","m":"Database connection refused — could not connect to db1.cluster.local:5432","c":"err"},
+    {t:"[ERR_CSP]","m":"Content Security Policy violation: inline scripts blocked","c":"warn"},
+    {t:"[ERR_JSON]","m":"Unexpected token < in JSON at position 0","c":"err"},
+    {t:"[ERR_RATE_LIMIT]","m":"429 Too Many Requests — rate limit exceeded for IP 192.0.2.1","c":"err"},
+    {t:"[INFO]","m":"Attempting fallback server https://backup.autreservice.example.com","c":"info"},
+    {t:"[ERR_SSL]","m":"SSL handshake failed: certificate has expired","c":"err"},
+    {t:"[ERR_DEPLOY]","m":"Version mismatch: frontend (v1.9.3) vs backend (v2.1.0)","c":"warn"},
+    {t:"[ERR_AUTH]","m":"CSRF token missing from POST request","c":"err"},
+    {t:"[ERR_UNKNOWN]","m":"Unhandled exception: NullReferenceException at renderModule.js:42","c":"err"}
+  ];
+
+  // helper to add a line
+  function addLine(obj){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    const ss = String(d.getSeconds()).padStart(2,'0');
+    const time = `[${hh}:${mm}:${ss}]`;
+    const line = document.createElement('div');
+    line.innerHTML = '<span class="time">'+time+'</span> <span class="'+obj.c+'">'+obj.t+'</span> — <span>'+obj.m+'</span>';
+    consoleEl.appendChild(line);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
   }
 
-  // Empêcher certains raccourcis basiques (optionnel)
-  window.addEventListener('keydown', function(e){
-    // bloquer Ctrl+R / F5 pour forcer l'illusion (mais l'utilisateur peut toujours recharger autrement)
-    if((e.ctrlKey && e.key === 'r') || e.key === 'F5'){ e.preventDefault(); }
+  // show a stream of errors, looping
+  let idx = 0;
+  let running = true;
+  let timer = null;
+
+  function start(){
+    running = true;
+    if(timer) clearInterval(timer);
+    timer = setInterval(()=>{
+      addLine(errors[idx]);
+      idx = (idx + 1) % errors.length;
+      // occasionally add a burst
+      if(Math.random() < 0.15){
+        for(let i=0;i<2;i++){
+          const j = Math.floor(Math.random()*errors.length);
+          setTimeout(()=> addLine(errors[j]), 120 + i*120);
+        }
+      }
+    }, 700);
+  }
+
+  function stopAndReveal(){
+    running = false;
+    if(timer) clearInterval(timer);
+    consoleEl.innerHTML = '';
+    addLine({t:'[SIMULATION]','m':'Simulation arrêtée — ceci est un contenu factice.',c:'info'});
+    const info = document.createElement('div');
+    info.style.marginTop = '10px';
+    info.style.color = '#666';
+    info.textContent = 'Page révélée — simulation désactivée.';
+    consoleEl.appendChild(info);
+  }
+
+  document.getElementById('stop').addEventListener('click', stopAndReveal);
+  document.getElementById('replay').addEventListener('click', function(){
+    consoleEl.innerHTML = '';
+    idx = 0;
+    start();
   });
+
+  // démarrer automatiquement
+  start();
+})();
 </script>
 </body>
 </html>
