@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pac-Man Niveaux Aléatoires (Correction Transform)</title>
+<title>Pac-Man Niveaux Aléatoires (Correction ULTIME)</title>
 <style>
     /* VARIABLES CSS pour faciliter la maintenance */
     :root {
@@ -80,11 +80,12 @@
         border-radius: 50%;
         z-index: 10;
         
-        /* CORRECTION: Positionnement de base et transition */
+        /* CORRECTION ULTIME : Position de départ au coin de la grille */
         left: 0;
         top: 0;
-        /* La transition inclut maintenant la translation */
-        transition: left 0.1s linear, top 0.1s linear, transform 0.1s;
+        
+        /* On ne met plus de transition sur left/top ! Seulement sur la transformation */
+        transition: transform 0.1s linear; 
         
         box-shadow: 0 0 15px #FFD700;
         
@@ -120,7 +121,9 @@
     const scoreDisplay = document.getElementById('score-display');
 
     // Récupération de la taille des cellules (20px)
-    const size = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
+    const size = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')); // 20
+    const pacmanSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pacman-size')); // 18
+    const offset = (size - pacmanSize) / 2; // 1
     
     const gridCols = 20;
     const gridRows = 20;
@@ -148,6 +151,7 @@
 
     // --- 2. Génération Aléatoire du Labyrinthe (DFS) ---
     function createEmptyMaze() {
+        // ... (Logique de création du labyrinthe inchangée)
         const tempMaze = [];
         for (let r = 0; r < gridRows; r++) {
             tempMaze[r] = [];
@@ -159,6 +163,7 @@
     }
 
     function generateRandomMaze() {
+        // ... (Logique de génération DFS inchangée)
         maze = createEmptyMaze();
         const stack = [];
         const startR = 1;
@@ -197,6 +202,7 @@
     }
     
     function drawMaze() {
+        // ... (Logique de dessin de la grille inchangée)
         game.innerHTML = '';
         grid.length = 0;
         dotsRemaining = 0;
@@ -229,29 +235,34 @@
         }
     }
 
-    // --- 3. Contrôles et Mouvement (Centrage par Translation) ---
+    // --- 3. Contrôles et Mouvement (Centrage par Translation Unique) ---
 
     function updatePacmanPosition() {
-        // Positionnement au coin supérieur gauche de la cellule
-        pacman.style.left = (pac.col * size) + 'px'; 
-        pacman.style.top = (pac.row * size) + 'px';
-        // Le centrage est maintenant dans setPacmanRotation via translate
+        // Calcul du positionnement dans la grille
+        const posX = pac.col * size + offset;
+        const posY = pac.row * size + offset;
+        
+        // Application de la transformation (mouvement + rotation)
+        const currentRotation = getRotation();
+        
+        // Utilisation du transform pour le mouvement (Translate) ET la rotation
+        // On remplace left/top par le translate dans la transformation
+        pacman.style.transform = `translate(${posX}px, ${posY}px) rotate(${currentRotation}deg)`;
+    }
+
+    // Fonction utilitaire pour récupérer la rotation actuelle sans la translation
+    function getRotation() {
+        let rotation = 0;
+        if (pac.direction === 'right') rotation = 0;
+        else if (pac.direction === 'down') rotation = 90;
+        else if (pac.direction === 'left') rotation = 180;
+        else if (pac.direction === 'up') rotation = 270;
+        return rotation;
     }
 
     function setPacmanRotation(dir) {
-        let rotation = 0;
-        if (dir === 'right') rotation = 0;
-        else if (dir === 'down') rotation = 90;
-        else if (dir === 'left') rotation = 180;
-        else if (dir === 'up') rotation = 270;
-
-        // Centrage PARFAIT : translate(-50%, -50%) décale le Pac-Man de 50% de sa propre taille (18px)
-        // Mais comme nous le positionnons au coin de la cellule, nous voulons le décaler de 50% de la TAILLE DE LA CELLULE.
-        // Puisque size (20) et pacmanSize (18) sont proches, nous utilisons translate(50%, 50%) qui déplace
-        // Pac-Man de la moitié de sa propre taille à droite et en bas.
-        // Pour les 20x20 vs 18x18, le centrage le plus propre est:
-        pacman.style.transform = `translate(1px, 1px) rotate(${rotation}deg)`; 
-        // 1px est l'écart (20-18)/2. C'est plus stable de le mettre ici que dans left/top.
+        // La rotation est maintenant appliquée dans updatePacmanPosition()
+        updatePacmanPosition();
     }
     
     let isListenerActive = false; 
@@ -268,13 +279,13 @@
 
         if (newDir !== pac.direction) {
             pac.direction = newDir;
-            setPacmanRotation(pac.direction);
+            setPacmanRotation(pac.direction); // Appel updatePacmanPosition pour la rotation
         }
 
         if(newRow>=0 && newRow<gridRows && newCol>=0 && newCol<gridCols && maze[newRow][newCol]!==1){
             
             pac.row=newRow; pac.col=newCol;
-            updatePacmanPosition();
+            updatePacmanPosition(); // Appel updatePacmanPosition pour le mouvement
 
             const idx = newRow*gridCols+newCol;
             if(grid[idx].type===2){
@@ -300,7 +311,9 @@
         pac.row = 1;
         pac.col = 1;
         pac.direction = 'right';
-        updatePacmanPosition();
+        
+        // Positionnement initial
+        updatePacmanPosition(); 
         setPacmanRotation(pac.direction);
         
         if (!isListenerActive) {
