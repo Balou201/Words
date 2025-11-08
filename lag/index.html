@@ -1,129 +1,118 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>autreservice.example.com — Erreurs (SIMULATION / FAKE)</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minecraft (Wish Edition) - SIMULATION</title>
 <style>
-  /* Très simple, pas d'ombres */
-  html,body{height:100%;margin:0;font-family:Consolas,Menlo,Monaco,monospace,Arial;background:#fafafa;color:#111}
-  .wrap{height:100%;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
-  .panel{width:100%;max-width:900px;padding:18px;border:1px solid #e6e6e6;background:#fff}
-  .site{font-weight:700;font-size:14px;margin-bottom:8px}
-  .site span{color:#b91c1c;font-size:11px;margin-left:8px}
-  h1{margin:6px 0 12px;font-size:18px}
-  .console{
-    background:#0b0b0b;color:#e6e6e6;padding:14px;height:360px;overflow:auto;
-    font-size:13px;line-height:1.4;border-radius:4px;border:1px solid #ddd;
+  body, html {
+    margin:0;
+    padding:0;
+    height:100%;
+    overflow:hidden;
+    font-family: monospace;
+    background:#87ceeb; /* ciel bleu très simple */
   }
-  .err{color:#ff6b6b}
-  .warn{color:#ffd166}
-  .info{color:#8ad4ff}
-  .time{color:#9aa3b2;margin-right:8px}
-  .btns{margin-top:12px}
-  button{padding:7px 10px;border-radius:4px;border:1px solid #ccc;background:transparent;cursor:pointer;font-family:inherit}
-  .note{margin-top:10px;font-size:12px;color:#666}
-  /* simple caret animation */
-  .caret{display:inline-block;width:8px;height:14px;background:#e6e6e6;vertical-align:middle;animation:blink 1s steps(1) infinite}
-  @keyframes blink{50%{opacity:0}}
-  /* prevent selection to keep illusion */
-  body,button{user-select:none}
+  .ground {
+    position:absolute;
+    bottom:0;
+    width:100%;
+    height:150px;
+    background:linear-gradient(#228B22,#006400);
+  }
+  .block {
+    width:50px;
+    height:50px;
+    background:#8B4513; /* bloc terre */
+    border:2px solid #654321; /* effet “pas très beau” */
+    position:absolute;
+    bottom:150px;
+  }
+  .grass {
+    width:50px;
+    height:15px;
+    background:#32CD32;
+    position:absolute;
+    bottom:150px;
+  }
+  .title {
+    position:absolute;
+    top:30px;
+    width:100%;
+    text-align:center;
+    font-size:36px;
+    color:#FFD700;
+    text-shadow:2px 2px #000;
+  }
+  .button {
+    position:absolute;
+    top:100px;
+    left:50%;
+    transform:translateX(-50%);
+    padding:10px 20px;
+    background:#ff0000;
+    color:white;
+    font-weight:bold;
+    border:none;
+    cursor:pointer;
+    font-size:16px;
+  }
+  .cloud {
+    position:absolute;
+    width:80px;
+    height:40px;
+    background:#fff;
+    border-radius:50%;
+    opacity:0.8;
+  }
 </style>
 </head>
 <body>
-  <div class="wrap" role="main" aria-live="polite">
-    <div class="panel">
-      <div class="site">autreservice.example.com <span>(SIMULATION / FAKE)</span></div>
-      <h1>Le site rencontre des erreurs — tentative de récupération</h1>
-
-      <div class="console" id="console" aria-hidden="false"></div>
-
-      <div class="btns">
-        <button id="replay">Relancer la simulation</button>
-        <button id="stop">Arrêter (révéler)</button>
-      </div>
-
-      <div class="note">Ceci est une simulation locale qui affiche des erreurs fictives pour troller — pas d'interaction réseau réelle.</div>
-    </div>
-  </div>
+  <div class="title">Minecraft (Wish Edition)</div>
+  <button class="button" onclick="startGame()">Lancer le jeu</button>
+  <div class="ground"></div>
 
 <script>
-(function(){
-  const consoleEl = document.getElementById('console');
-  const errors = [
-    {t:"[ERR_NET_TIMEOUT]","m":"Request to https://api.autreservice.example.com/data timed out after 30000ms","c":"err"},
-    {t:"[500]","m":"Internal Server Error — /api/v2/user/profile","c":"err"},
-    {t:"[ERR_RESOURCE]","m":"Failed to load resource: the server responded with a status of 502 (Bad Gateway)","c":"err"},
-    {t:"[WARN]","m":"DeprecationWarning: fetch() will change behaviour in future releases","c":"warn"},
-    {t:"[ERR_AUTH]","m":"Invalid token provided for user session (token expired)","c":"err"},
-    {t:"[INFO]","m":"Retrying connection (attempt 3/5)","c":"info"},
-    {t:"[ERR_DB]","m":"Database connection refused — could not connect to db1.cluster.local:5432","c":"err"},
-    {t:"[ERR_CSP]","m":"Content Security Policy violation: inline scripts blocked","c":"warn"},
-    {t:"[ERR_JSON]","m":"Unexpected token < in JSON at position 0","c":"err"},
-    {t:"[ERR_RATE_LIMIT]","m":"429 Too Many Requests — rate limit exceeded for IP 192.0.2.1","c":"err"},
-    {t:"[INFO]","m":"Attempting fallback server https://backup.autreservice.example.com","c":"info"},
-    {t:"[ERR_SSL]","m":"SSL handshake failed: certificate has expired","c":"err"},
-    {t:"[ERR_DEPLOY]","m":"Version mismatch: frontend (v1.9.3) vs backend (v2.1.0)","c":"warn"},
-    {t:"[ERR_AUTH]","m":"CSRF token missing from POST request","c":"err"},
-    {t:"[ERR_UNKNOWN]","m":"Unhandled exception: NullReferenceException at renderModule.js:42","c":"err"}
-  ];
-
-  // helper to add a line
-  function addLine(obj){
-    const d = new Date();
-    const hh = String(d.getHours()).padStart(2,'0');
-    const mm = String(d.getMinutes()).padStart(2,'0');
-    const ss = String(d.getSeconds()).padStart(2,'0');
-    const time = `[${hh}:${mm}:${ss}]`;
-    const line = document.createElement('div');
-    line.innerHTML = '<span class="time">'+time+'</span> <span class="'+obj.c+'">'+obj.t+'</span> — <span>'+obj.m+'</span>';
-    consoleEl.appendChild(line);
-    consoleEl.scrollTop = consoleEl.scrollHeight;
+  // nuages flottants
+  for(let i=0;i<5;i++){
+    let cloud = document.createElement('div');
+    cloud.className='cloud';
+    cloud.style.left=Math.random()*window.innerWidth+'px';
+    cloud.style.top=Math.random()*100+'px';
+    document.body.appendChild(cloud);
   }
 
-  // show a stream of errors, looping
-  let idx = 0;
-  let running = true;
-  let timer = null;
-
-  function start(){
-    running = true;
-    if(timer) clearInterval(timer);
-    timer = setInterval(()=>{
-      addLine(errors[idx]);
-      idx = (idx + 1) % errors.length;
-      // occasionally add a burst
-      if(Math.random() < 0.15){
-        for(let i=0;i<2;i++){
-          const j = Math.floor(Math.random()*errors.length);
-          setTimeout(()=> addLine(errors[j]), 120 + i*120);
-        }
-      }
-    }, 700);
+  function startGame(){
+    // retirer le bouton et titre
+    document.querySelector('.button').style.display='none';
+    document.querySelector('.title').textContent='Bienvenue dans Minecraft (Wish Edition)';
+    // créer des “blocs” de manière random
+    for(let i=0;i<12;i++){
+      let block = document.createElement('div');
+      block.className='block';
+      block.style.left=(i*55 + Math.random()*10)+'px';
+      document.body.appendChild(block);
+      let grass = document.createElement('div');
+      grass.className='grass';
+      grass.style.left=(i*55 + Math.random()*10)+'px';
+      document.body.appendChild(grass);
+    }
+    // texte d'alerte troll
+    setTimeout(()=> alert("Note : ceci est Minecraft version Wish ! Les blocs sont glitchy 😂"), 500);
   }
 
-  function stopAndReveal(){
-    running = false;
-    if(timer) clearInterval(timer);
-    consoleEl.innerHTML = '';
-    addLine({t:'[SIMULATION]','m':'Simulation arrêtée — ceci est un contenu factice.',c:'info'});
-    const info = document.createElement('div');
-    info.style.marginTop = '10px';
-    info.style.color = '#666';
-    info.textContent = 'Page révélée — simulation désactivée.';
-    consoleEl.appendChild(info);
+  // animation simple des nuages
+  function moveClouds(){
+    const clouds=document.querySelectorAll('.cloud');
+    clouds.forEach(c=>{
+      let left=parseFloat(c.style.left);
+      left+=0.2;
+      if(left>window.innerWidth) left=-100;
+      c.style.left=left+'px';
+    });
+    requestAnimationFrame(moveClouds);
   }
-
-  document.getElementById('stop').addEventListener('click', stopAndReveal);
-  document.getElementById('replay').addEventListener('click', function(){
-    consoleEl.innerHTML = '';
-    idx = 0;
-    start();
-  });
-
-  // démarrer automatiquement
-  start();
-})();
+  moveClouds();
 </script>
 </body>
 </html>
