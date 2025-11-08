@@ -1,36 +1,30 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Compte en examen</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>service.example.com — Compte en examen (SIMULATION)</title>
 <style>
-  body {
-    margin: 0;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: Arial, sans-serif;
-    background: #f0f0f0;
-    color: #333;
-    text-align: center;
-  }
-  .message {
-    background: white;
-    padding: 30px 40px;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-  }
-  h1 { margin: 0 0 10px; font-size: 22px; }
-  p { margin: 0; font-size: 16px; }
+  /* Très simple — pas d'ombres, pas de JS */
+  html,body{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;color:#111}
+  .wrap{height:100%;display:flex;align-items:center;justify-content:center}
+  .card{width:90%;max-width:620px;padding:30px;border-radius:6px;background:#ffffff;border:1px solid #e6e6e6;text-align:center}
+  .site{font-weight:700;font-size:16px;margin-bottom:8px}
+  .site span{color:#b91c1c;font-weight:700;margin-left:8px;font-size:12px} /* indique que c'est fake */
+  h1{margin:10px 0;font-size:22px;font-weight:700}
+  p{margin:8px 0;color:#444;font-size:15px;line-height:1.4}
+  .meta{margin-top:14px;font-size:13px;color:#777}
 </style>
 </head>
 <body>
-  <div class="message">
-    <h1>Compte en examen</h1>
-    <p>Votre compte est actuellement en examen.</p>
-    <p>Certains sites et services sont temporairement inaccessibles.</p>
+  <div class="wrap" role="main" aria-live="polite">
+    <div class="card" role="status" aria-label="Compte en examen">
+      <div class="site">service.example.com <span>(SIMULATION / FAKE)</span></div>
+      <h1>Compte en examen</h1>
+      <p>Nous examinons actuellement l'activité associée à votre compte.</p>
+      <p>Pendant l'examen, l'accès à certains services peut être restreint ou indisponible.</p>
+      <div class="meta">Si vous pensez qu'il s'agit d'une erreur, contactez l'assistance — ceci est une simulation locale.</div>
+    </div>
   </div>
 </body>
 </html>
