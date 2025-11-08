@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pac-Man Génération Aléatoire & Position Corrigée</title>
+<title>Pac-Man Niveaux Aléatoires</title>
 <style>
     /* Styles de base et du corps */
     body {
         margin: 0;
         padding: 0;
         display: flex;
+        flex-direction: column; /* Organiser verticalement */
         justify-content: center;
         align-items: center;
         height: 100vh;
@@ -18,6 +19,16 @@
         color: #fff;
     }
     
+    /* Zone d'information (Score/Niveau) */
+    #info-bar {
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        text-shadow: 0 0 10px #FFD700;
+        color: #FFFF00;
+        display: flex;
+        gap: 50px;
+    }
+
     /* Conteneur du jeu */
     #game {
         position: relative;
@@ -29,7 +40,6 @@
         grid-template-rows: repeat(20, 20px);
         border: 4px solid #00FFFF;
         box-shadow: 0 0 20px #00FFFF, inset 0 0 10px #00FFFF;
-        /* Correction : Ajout de box-sizing pour que la bordure ne compte pas dans la taille */
         box-sizing: content-box; 
     }
     
@@ -66,13 +76,9 @@
         transition: left 0.1s linear, top 0.1s linear, transform 0.1s;
         box-shadow: 0 0 15px #FFD700;
         
-        /* Forme de bouche utilisant clip-path */
         clip-path: polygon(100% 0, 100% 50%, 75% 50%, 100% 100%, 0 100%, 0 0);
         animation: chomp 0.2s infinite step-end;
         transform-origin: center;
-
-        /* CORRECTION: On enlève les décalages fixes du CSS */
-        /* left: 1px; top: 1px; */ 
     }
 
     /* Keyframes pour les animations */
@@ -88,22 +94,58 @@
 </style>
 </head>
 <body>
+<div id="info-bar">
+    <div id="level-display">Niveau: 1</div>
+    <div id="score-display">Score: 0</div>
+</div>
 <div id="game"></div>
 <div id="pacman"></div>
 
 <script>
     const game = document.getElementById('game');
     const pacman = document.getElementById('pacman');
+    const levelDisplay = document.getElementById('level-display');
+    const scoreDisplay = document.getElementById('score-display');
+
     const size = 20; // Taille cellule (20x20px)
     const pacmanSize = 18; // Taille de Pac-Man (18x18px)
-    const offset = (size - pacmanSize) / 2; // Décalage pour centrer (20 - 18) / 2 = 1px
+    const offset = (size - pacmanSize) / 2; // Décalage pour centrer (1px)
     
     const gridCols = 20;
     const gridRows = 20;
-    const grid = [];
+    
+    let grid = [];
     let maze = [];
+    let pac = {row:1, col:1, direction: 'right'};
+    let currentLevel = 1;
+    let score = 0;
+    let dotsRemaining = 0;
 
-    // --- 1. Génération Aléatoire du Labyrinthe (DFS) ---
+    // --- 1. Logique de Progression de Niveau ---
+
+    /**
+     * Fait progresser le jeu au niveau suivant.
+     */
+    function nextLevel() {
+        currentLevel++;
+        levelDisplay.textContent = `Niveau: ${currentLevel}`;
+        
+        // Réinitialiser le jeu avec un nouveau labyrinthe
+        initGame();
+    }
+
+    /**
+     * Vérifie si le niveau est terminé.
+     */
+    function checkWinCondition() {
+        if (dotsRemaining === 0) {
+            // Un petit délai pour que le dernier point disparaisse avant de passer au niveau
+            setTimeout(nextLevel, 500);
+        }
+    }
+
+
+    // --- 2. Génération Aléatoire du Labyrinthe (DFS) ---
     function createEmptyMaze() {
         const tempMaze = [];
         for (let r = 0; r < gridRows; r++) {
@@ -153,31 +195,29 @@
         }
     }
     
-    // --- 2. Initialisation du Jeu ---
-    generateRandomMaze();
-    
-    // Ajout des points (Pac-Dots) dans tous les chemins (0)
-    for(let r=0;r<gridRows;r++){
-        for(let c=0;c<gridCols;c++){
-            if(maze[r][c] === 0){
-                 maze[r][c] = 2; // 2 = Point
-            }
-        }
-    }
-    
-    // S'assurer que le point de départ est vide (pas de dot)
-    maze[1][1] = 0; 
-
-    // Position initiale de Pac-Man
-    let pac = {row:1, col:1, direction: 'right'};
-
     /**
-     * Dessine le labyrinthe dans le DOM à partir de la matrice `maze`.
+     * Dessine le labyrinthe et compte les points.
      */
     function drawMaze() {
         game.innerHTML = '';
         grid.length = 0;
+        dotsRemaining = 0;
+
+        // Ajouter les points (2) dans les chemins (0)
+        for(let r=0;r<gridRows;r++){
+            for(let c=0;c<gridCols;c++){
+                if(maze[r][c] === 0){
+                    maze[r][c] = 2; // 2 = Point
+                    dotsRemaining++;
+                }
+            }
+        }
         
+        // Retirer le point de la case de départ de Pac-Man
+        maze[pac.row][pac.col] = 0;
+        dotsRemaining--;
+
+        // Dessin dans le DOM
         for(let r=0;r<gridRows;r++){
             for(let c=0;c<gridCols;c++){
                 const cell = document.createElement('div');
@@ -193,25 +233,15 @@
             }
         }
     }
-    
-    drawMaze();
 
-    /**
-     * Calcule et applique la position de Pac-Man pour qu'il soit centré.
-     * C'est ici qu'était le bug !
-     */
+    // --- 3. Contrôles et Mouvement (avec Mise à Jour de Score) ---
+
     function updatePacmanPosition() {
-        // Le calcul correct pour centrer le 18x18 dans le 20x20
-        // (Position de la colonne * Taille de la cellule) + Décalage de centrage (1px)
+        // Le calcul pour centrer le 18x18 dans le 20x20
         pacman.style.left = (pac.col * size + offset) + 'px'; 
         pacman.style.top = (pac.row * size + offset) + 'px';
     }
 
-    updatePacmanPosition(); // Positionnement initial
-
-    /**
-     * Applique la rotation de Pac-Man en fonction de sa direction
-     */
     function setPacmanRotation(dir) {
         let rotation = 0;
         if (dir === 'right') rotation = 0;
@@ -221,12 +251,11 @@
 
         pacman.style.transform = `rotate(${rotation}deg)`;
     }
+    
+    // Pour ne pas ajouter un nouvel écouteur de touche à chaque niveau
+    let isListenerActive = false; 
 
-    setPacmanRotation(pac.direction);
-
-    // --- 3. Contrôles et Logique du Jeu ---
-
-    document.addEventListener('keydown', e=>{
+    function handleKeyDown(e) {
         let newRow = pac.row;
         let newCol = pac.col;
         let newDir = pac.direction;
@@ -236,7 +265,6 @@
         else if(e.key==='ArrowLeft'){ newCol--; newDir='left'; }
         else if(e.key==='ArrowRight'){ newCol++; newDir='right'; }
 
-        // Mettre à jour la direction AVANT de déplacer (pour rotation)
         if (newDir !== pac.direction) {
             pac.direction = newDir;
             setPacmanRotation(pac.direction);
@@ -247,17 +275,48 @@
             
             // Déplacer Pac-Man
             pac.row=newRow; pac.col=newCol;
-            updatePacmanPosition(); // Appliquer la nouvelle position centrée
+            updatePacmanPosition();
 
-            // manger un point
+            // Manger un point
             const idx = newRow*gridCols+newCol;
             if(grid[idx].type===2){
-                grid[idx].type=0;
-                maze[newRow][newCol] = 0;
-                grid[idx].el.innerHTML='';
+                // Mise à jour des scores et décompte
+                score += 10; 
+                dotsRemaining--;
+                scoreDisplay.textContent = `Score: ${score}`;
+
+                grid[idx].type=0; // Marquer la case comme vide
+                maze[newRow][newCol] = 0; // Mettre à jour la matrice
+                grid[idx].el.innerHTML=''; // enlever dot visuellement
+
+                checkWinCondition();
             }
         }
-    });
+    }
+
+    // --- 4. Fonction d'Initialisation Globale ---
+
+    function initGame() {
+        // 1. Générer le nouveau labyrinthe et le dessiner
+        generateRandomMaze();
+        drawMaze();
+
+        // 2. Réinitialiser la position et l'apparence de Pac-Man
+        pac.row = 1;
+        pac.col = 1;
+        pac.direction = 'right';
+        updatePacmanPosition();
+        setPacmanRotation(pac.direction);
+        
+        // 3. Activer les écouteurs si ce n'est pas déjà fait
+        if (!isListenerActive) {
+            document.addEventListener('keydown', handleKeyDown);
+            isListenerActive = true;
+        }
+    }
+
+    // Démarrer le jeu au niveau 1
+    initGame(); 
 </script>
 </body>
 </html>
