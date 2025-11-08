@@ -3,80 +3,81 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minecraft Wish Edition - Mini Jeu</title>
+<title>Pac-Man Mini</title>
 <style>
-  html,body {margin:0;padding:0;height:100%;overflow:hidden;background:#87ceeb;font-family:monospace;}
-  .ground {position:absolute;bottom:0;width:100%;height:150px;background:#228B22;}
-  .block {width:50px;height:50px;position:absolute;border:2px solid #654321;}
-  .player {width:30px;height:50px;position:absolute;background:#ff5555;bottom:200px;left:50px;}
-  .cloud {position:absolute;width:80px;height:40px;background:#fff;border-radius:50%;opacity:0.8;}
+  body { margin:0; padding:0; display:flex; justify-content:center; align-items:center; height:100vh; background:black; }
+  #game { position:relative; width:400px; height:400px; background:#000; display:grid; grid-template-columns:repeat(20,20px); grid-template-rows:repeat(20,20px); }
+  .wall { background:#0000FF; }
+  .dot { width:6px; height:6px; background:#FFFF00; border-radius:50%; margin:auto; }
+  #pacman { position:absolute; width:18px; height:18px; background:yellow; border-radius:50%; z-index:10; transition:0.1s linear; }
 </style>
 </head>
 <body>
-<div class="ground"></div>
-<div class="player" id="player"></div>
+<div id="game"></div>
+<div id="pacman"></div>
 
 <script>
-  const player = document.getElementById('player');
-  let posX = 50, posY = 200, velY = 0, jumping = false;
-  const gravity = 0.8, groundLevel = 200;
+  const game = document.getElementById('game');
+  const pacman = document.getElementById('pacman');
+  const size = 20; // taille cellule
+  const grid = [];
 
-  // créer des blocs “Wish” colorés
-  const colors = ['#8B4513','#D2691E','#A0522D','#CD853F','#C0C0C0'];
-  for(let i=0;i<15;i++){
-    let block = document.createElement('div');
-    block.className='block';
-    block.style.left = (i*55)+'px';
-    block.style.bottom = '150px';
-    block.style.background = colors[Math.floor(Math.random()*colors.length)];
-    document.body.appendChild(block);
+  // labyrinthe simple (0 = vide, 1 = mur, 2 = point)
+  const maze = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,2,2,2,1,2,2,2,2,2,2,2,2,1,2,2,2,2,2,1],
+    [1,2,1,2,1,2,1,1,1,2,1,1,1,2,1,2,1,2,2,1],
+    [1,2,1,2,2,2,2,2,1,2,1,2,2,2,1,2,1,2,2,1],
+    [1,2,1,1,1,1,1,2,1,2,1,2,1,1,1,1,1,2,2,1],
+    [1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,2,2,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    // reste vide pour simplifier
+  ];
+
+  const rows = maze.length;
+  const cols = maze[0].length;
+
+  // créer le labyrinthe
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const cell = document.createElement('div');
+      if(maze[r][c]===1) cell.className='wall';
+      else if(maze[r][c]===2){
+        const dot = document.createElement('div');
+        dot.className='dot';
+        cell.appendChild(dot);
+      }
+      game.appendChild(cell);
+      grid.push({row:r,col:c,type:maze[r][c],el:cell});
+    }
   }
 
-  // nuages aléatoires
-  for(let i=0;i<6;i++){
-    let cloud = document.createElement('div');
-    cloud.className='cloud';
-    cloud.style.left = Math.random()*window.innerWidth+'px';
-    cloud.style.top = Math.random()*100+'px';
-    document.body.appendChild(cloud);
-  }
+  // position pacman
+  let pac = {row:1, col:1};
+  pacman.style.left = pac.col*size+'px';
+  pacman.style.top = pac.row*size+'px';
 
-  // contrôles du joueur
-  const keys = {};
-  document.addEventListener('keydown', e=>keys[e.key]=true);
-  document.addEventListener('keyup', e=>keys[e.key]=false);
-
-  function gameLoop(){
-    // mouvements horizontaux
-    if(keys['ArrowLeft']) posX -= 5;
-    if(keys['ArrowRight']) posX += 5;
-
-    // saut
-    if(keys[' '] && !jumping){ velY=-12; jumping=true; }
-
-    // gravité
-    velY += gravity;
-    posY += velY;
-
-    // collision sol
-    if(posY>groundLevel){ posY=groundLevel; velY=0; jumping=false; }
-
-    // appliquer positions
-    player.style.left = posX+'px';
-    player.style.bottom = posY+'px';
-
-    // nuages flottants
-    document.querySelectorAll('.cloud').forEach(c=>{
-      let left = parseFloat(c.style.left);
-      left += 0.3;
-      if(left>window.innerWidth) left=-100;
-      c.style.left = left+'px';
-    });
-
-    requestAnimationFrame(gameLoop);
-  }
-
-  gameLoop();
+  // contrôles
+  document.addEventListener('keydown', e=>{
+    let newRow = pac.row;
+    let newCol = pac.col;
+    if(e.key==='ArrowUp') newRow--;
+    if(e.key==='ArrowDown') newRow++;
+    if(e.key==='ArrowLeft') newCol--;
+    if(e.key==='ArrowRight') newCol++;
+    // vérifier mur
+    if(newRow>=0 && newRow<rows && newCol>=0 && newCol<cols && maze[newRow][newCol]!==1){
+      pac.row=newRow; pac.col=newCol;
+      pacman.style.left = pac.col*size+'px';
+      pacman.style.top = pac.row*size+'px';
+      // manger un point
+      const idx = newRow*cols+newCol;
+      if(grid[idx].type===2){
+        grid[idx].type=0;
+        grid[idx].el.innerHTML=''; // enlever dot
+      }
+    }
+  });
 </script>
 </body>
 </html>
