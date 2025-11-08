@@ -1,327 +1,79 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pac-Man Niveaux Aléatoires (Correction Bordure)</title>
-<style>
-    /* VARIABLES CSS pour faciliter la maintenance */
-    :root {
-        --cell-size: 20px; /* Taille de la cellule de grille */
-        --pacman-size: 18px; /* Taille de Pac-Man */
-        --game-border: 4px; /* Nouvelle variable pour la bordure du jeu */
-    }
-    
-    /* Styles de base et du corps */
-    body {
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background: #0d0d0d;
-        font-family: 'Arial', sans-serif;
-        color: #fff;
-    }
-    
-    /* Zone d'information (Score/Niveau) */
-    #info-bar {
-        margin-bottom: 20px;
-        font-size: 1.5em;
-        text-shadow: 0 0 10px #FFD700;
-        color: #FFFF00;
-        display: flex;
-        gap: 50px;
-    }
-
-    /* Conteneur du jeu */
-    #game {
-        position: relative;
-        width: 400px;
-        height: 400px;
-        background: #000;
-        display: grid;
-        grid-template-columns: repeat(20, var(--cell-size));
-        grid-template-rows: repeat(20, var(--cell-size));
-        /* Utilisation de la variable CSS pour la bordure */
-        border: var(--game-border) solid #00FFFF; 
-        box-shadow: 0 0 20px #00FFFF, inset 0 0 10px #00FFFF;
-        box-sizing: content-box; 
-    }
-    
-    /* Murs 🧱 - Épais et stylisés */
-    .wall {
-        background: #0000AA;
-        border: 1px solid #0000FF;
-        box-shadow: inset 0 0 8px #0000FF, 0 0 5px #0000FF;
-    }
-
-    /* Points (Pac-Dots) 🟡 - Plus brillants */
-    .dot-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    .dot {
-        width: 8px;
-        height: 8px;
-        background: #FFFF00;
-        border-radius: 50%;
-        box-shadow: 0 0 10px #FFFF00, 0 0 20px #FFD700;
-        animation: pulse 1.5s infinite alternate;
-    }
-
-    /* Pac-Man 😋 - La star du jeu */
-    #pacman {
-        position: absolute;
-        width: var(--pacman-size);
-        height: var(--pacman-size);
-        background: #FFD700;
-        border-radius: 50%;
-        z-index: 10;
-        
-        /* Correction: On utilise left et top pour le point de départ absolu (0,0) de la grille */
-        left: 0; 
-        top: 0;
-        
-        transition: transform 0.1s linear; 
-        
-        box-shadow: 0 0 15px #FFD700;
-        
-        clip-path: polygon(100% 0, 100% 50%, 75% 50%, 100% 100%, 0 100%, 0 0);
-        animation: chomp 0.2s infinite step-end;
-        transform-origin: center;
-    }
-
-    /* Keyframes pour les animations */
-    @keyframes chomp {
-        0% { clip-path: polygon(100% 0, 100% 50%, 75% 50%, 100% 100%, 0 100%, 0 0); }
-        50% { clip-path: circle(50% at 50% 50%); }
-    }
-    
-    @keyframes pulse {
-        from { opacity: 0.8; transform: scale(1); }
-        to { opacity: 1; transform: scale(1.1); }
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hôtel du Crépuscule - Dossier d'Enquête</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #0d0d0d; /* Presque noir */
+            color: #ccc; /* Gris clair pour un effet "vieux document" */
+            margin: 40px;
+            line-height: 1.6;
+            border: 2px solid #550000; /* Bordure rouge sang discrète */
+            padding: 20px;
+        }
+        h1 {
+            color: #ff4444; /* Rouge effrayant */
+            text-align: center;
+            border-bottom: 1px solid #550000;
+            padding-bottom: 10px;
+            text-transform: uppercase;
+        }
+        h2 {
+            color: #ff8888;
+            margin-top: 30px;
+        }
+        .introduction {
+            margin-bottom: 30px;
+            font-size: 1.1em;
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-left: 5px solid #ff4444;
+        }
+        .choix {
+            list-style-type: none;
+            padding: 0;
+        }
+        .choix li {
+            margin: 10px 0;
+        }
+        .choix a {
+            color: #ffcccc;
+            text-decoration: none;
+            display: block;
+            padding: 8px;
+            border: 1px dashed #550000;
+            transition: background-color 0.3s;
+        }
+        .choix a:hover {
+            background-color: #330000;
+            color: #ffffff;
+        }
+    </style>
 </head>
 <body>
-<div id="info-bar">
-    <div id="level-display">Niveau: 1</div>
-    <div id="score-display">Score: 0</div>
-</div>
-<div id="game"></div>
-<div id="pacman"></div>
 
-<script>
-    const game = document.getElementById('game');
-    const pacman = document.getElementById('pacman');
-    const levelDisplay = document.getElementById('level-display');
-    const scoreDisplay = document.getElementById('score-display');
+    <h1>&#x1F47B; L'HÔTEL DU CRÉPUSCULE &#x1F47B;</h1>
+    <h2>Dossier d'Enquête Initial</h2>
 
-    // Récupération des valeurs du CSS
-    const size = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')); // 20
-    const pacmanSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pacman-size')); // 18
-    const gameBorder = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--game-border')); // 4
-    const offset = (size - pacmanSize) / 2; // 1
-    
-    const gridCols = 20;
-    const gridRows = 20;
-    
-    let grid = [];
-    let maze = [];
-    let pac = {row:1, col:1, direction: 'right'};
-    let currentLevel = 1;
-    let score = 0;
-    let dotsRemaining = 0;
+    <div class="introduction">
+        <p><strong>Fichier :</strong> BLACKWOOD_INTRUSION_LOG_01</p>
+        <p><strong>Sujet :</strong> Elara Vance (Journaliste d'investigation)</p>
+        <p>Vous êtes <strong>Elara Vance</strong>. Une vieille légende urbaine vous a menée jusqu'à l'<strong>Hôtel Blackwood</strong>, surnommé l'« Hôtel du Crépuscule », un établissement abandonné il y a soixante ans suite à une série de disparitions inexpliquées. La nuit est tombée, une brume épaisse enveloppe le bâtiment. Vous avez votre lampe de poche, votre dictaphone et un enregistreur EMF (champ électromagnétique).</p>
+        <p>Vous vous tenez devant les portes doubles en bois vermoulu de l'entrée principale.</p>
+    </div>
 
-    // --- Fonctions de progression et de labyrinthe (inchangées) ---
+    <h3>&#x1F50C; Que faites-vous ?</h3>
 
-    function nextLevel() {
-        currentLevel++;
-        levelDisplay.textContent = `Niveau: ${currentLevel}`;
-        initGame();
-    }
+    <ul class="choix">
+        <li><a href="#" onclick="alert('Ceci est une simulation. Votre choix est [A]. Continuez en répondant !')"><strong>[A]</strong> Pousser les portes et entrer par l'**entrée principale**.</a></li>
+        <li><a href="#" onclick="alert('Ceci est une simulation. Votre choix est [B]. Continuez en répondant !')"><strong>[B]</strong> Faire le tour pour chercher une **entrée de service** ou une autre ouverture.</a></li>
+        <li><a href="#" onclick="alert('Ceci est une simulation. Votre choix est [C]. Continuez en répondant !')"><strong>[C]</strong> Allumer l'**enregistreur EMF** et attendre une minute avant d'entrer.</a></li>
+    </ul>
 
-    function checkWinCondition() {
-        if (dotsRemaining === 0) {
-            setTimeout(nextLevel, 500);
-        }
-    }
+    <p style="margin-top: 40px; text-align: center; color: #888;"><em>(Veuillez répondre avec la lettre de votre choix pour continuer l'histoire.)</em></p>
 
-    function createEmptyMaze() {
-        const tempMaze = [];
-        for (let r = 0; r < gridRows; r++) {
-            tempMaze[r] = [];
-            for (let c = 0; c < gridCols; c++) {
-                tempMaze[r][c] = 1;
-            }
-        }
-        return tempMaze;
-    }
-
-    function generateRandomMaze() {
-        maze = createEmptyMaze();
-        const stack = [];
-        const startR = 1;
-        const startC = 1;
-        // ... (Logique de génération DFS) ...
-        stack.push({ r: startR, c: startC });
-        maze[startR][startC] = 0;
-
-        while (stack.length > 0) {
-            const current = stack.pop();
-            const { r, c } = current;
-            
-            const directions = [
-                { dr: -2, dc: 0 }, { dr: 2, dc: 0 }, 
-                { dr: 0, dc: -2 }, { dr: 0, dc: 2 }
-            ];
-            
-            directions.sort(() => Math.random() - 0.5);
-
-            for (const dir of directions) {
-                const nextR = r + dir.dr;
-                const nextC = c + dir.dc;
-
-                if (nextR > 0 && nextR < gridRows - 1 && nextC > 0 && nextC < gridCols - 1 && maze[nextR][nextC] === 1) {
-                    const wallR = r + dir.dr / 2;
-                    const wallC = c + dir.dc / 2;
-                    maze[wallR][wallC] = 0;
-                    maze[nextR][nextC] = 0;
-                    
-                    stack.push(current); 
-                    stack.push({ r: nextR, c: nextC });
-                    break;
-                }
-            }
-        }
-    }
-    
-    function drawMaze() {
-        game.innerHTML = '';
-        grid.length = 0;
-        dotsRemaining = 0;
-
-        for(let r=0;r<gridRows;r++){
-            for(let c=0;c<gridCols;c++){
-                if(maze[r][c] === 0){
-                    maze[r][c] = 2; 
-                    dotsRemaining++;
-                }
-            }
-        }
-        
-        maze[pac.row][pac.col] = 0;
-        dotsRemaining--;
-
-        for(let r=0;r<gridRows;r++){
-            for(let c=0;c<gridCols;c++){
-                const cell = document.createElement('div');
-                if(maze[r][c]===1) cell.className='wall';
-                else if(maze[r][c]===2){
-                    cell.className='dot-container';
-                    const dot = document.createElement('div');
-                    dot.className='dot';
-                    cell.appendChild(dot);
-                }
-                game.appendChild(cell);
-                grid.push({row:r,col:c,type:maze[r][c],el:cell});
-            }
-        }
-    }
-
-    // --- Mouvement et Correction de Position ---
-
-    function updatePacmanPosition() {
-        // Position X/Y par rapport à la grille (colonne * taille cellule)
-        const gridX = pac.col * size;
-        const gridY = pac.row * size;
-        
-        // CORRECTION MAJEURE: On ajuste le décalage de la bordure du conteneur (#game)
-        const finalX = gridX + offset - gameBorder; // -4px pour la bordure
-        const finalY = gridY + offset - gameBorder; // -4px pour la bordure
-        
-        // Application de la transformation (mouvement + rotation)
-        const currentRotation = getRotation();
-        
-        pacman.style.transform = `translate(${finalX}px, ${finalY}px) rotate(${currentRotation}deg)`;
-    }
-
-    function getRotation() {
-        let rotation = 0;
-        if (pac.direction === 'right') rotation = 0;
-        else if (pac.direction === 'down') rotation = 90;
-        else if (pac.direction === 'left') rotation = 180;
-        else if (pac.direction === 'up') rotation = 270;
-        return rotation;
-    }
-
-    function setPacmanRotation(dir) {
-        // Met à jour la position avec la nouvelle rotation
-        updatePacmanPosition();
-    }
-    
-    let isListenerActive = false; 
-
-    function handleKeyDown(e) {
-        let newRow = pac.row;
-        let newCol = pac.col;
-        let newDir = pac.direction;
-
-        if(e.key==='ArrowUp'){ newRow--; newDir='up'; }
-        else if(e.key==='ArrowDown'){ newRow++; newDir='down'; }
-        else if(e.key==='ArrowLeft'){ newCol--; newDir='left'; }
-        else if(e.key==='ArrowRight'){ newCol++; newDir='right'; }
-
-        if (newDir !== pac.direction) {
-            pac.direction = newDir;
-            setPacmanRotation(pac.direction);
-        }
-
-        if(newRow>=0 && newRow<gridRows && newCol>=0 && newCol<gridCols && maze[newRow][newCol]!==1){
-            
-            pac.row=newRow; pac.col=newCol;
-            updatePacmanPosition();
-
-            const idx = newRow*gridCols+newCol;
-            if(grid[idx].type===2){
-                score += 10; 
-                dotsRemaining--;
-                scoreDisplay.textContent = `Score: ${score}`;
-
-                grid[idx].type=0; 
-                maze[newRow][newCol] = 0; 
-                grid[idx].el.innerHTML=''; 
-
-                checkWinCondition();
-            }
-        }
-    }
-
-    // --- Fonction d'Initialisation Globale ---
-
-    function initGame() {
-        generateRandomMaze();
-        drawMaze();
-
-        pac.row = 1;
-        pac.col = 1;
-        pac.direction = 'right';
-        
-        updatePacmanPosition(); 
-        setPacmanRotation(pac.direction);
-        
-        if (!isListenerActive) {
-            document.addEventListener('keydown', handleKeyDown);
-            isListenerActive = true;
-        }
-    }
-
-    // Démarrer le jeu
-    initGame(); 
-</script>
 </body>
 </html>
