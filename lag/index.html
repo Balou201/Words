@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GEL CRITIQUE - Simulation de Lag Extrême</title>
+    <title>GEL CRITIQUE - 100 000 MS</title>
     <style>
         body {
             font-family: 'Consolas', 'Courier New', monospace;
             background-color: #000000;
-            color: #00ff00; /* Vert hacker/glitch */
+            color: #ff0000; /* Rouge d'alerte */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -17,14 +17,19 @@
         .container {
             background-color: #111;
             padding: 40px;
-            border: 3px solid #ff0000; /* Bordure critique rouge */
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.7);
-            width: 400px;
+            border: 5px solid #ff0000; /* Bordure critique rouge épaisse */
+            box-shadow: 0 0 30px rgba(255, 0, 0, 1);
+            width: 450px;
             text-align: center;
         }
         h1 {
             color: #ff0000;
-            text-shadow: 0 0 5px #ff0000;
+            text-shadow: 0 0 10px #ff0000;
+            animation: alerte 0.5s infinite alternate; /* Ajout d'une animation d'alerte */
+        }
+        @keyframes alerte {
+            from { color: #ff0000; }
+            to { color: #8b0000; }
         }
         label {
             display: block;
@@ -37,60 +42,59 @@
             margin-bottom: 30px;
         }
         button {
-            background-color: #8b0000; /* Rouge foncé */
+            background-color: #8b0000;
             color: white;
             border: 2px solid #ff0000;
-            padding: 12px 20px;
-            border-radius: 0; /* Effet brutal */
+            padding: 15px;
+            border-radius: 0;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 20px;
             width: 100%;
-            transition: background-color 0.2s;
-        }
-        button:hover {
-            background-color: #cc0000;
         }
         #resultat {
             margin-top: 30px;
             padding: 20px;
-            border: 1px dashed #00ff00;
+            border: 2px solid #ff0000;
             background-color: #0a0a0a;
             min-height: 50px;
+            color: #ffcccc;
             text-align: left;
         }
         #valeurLag {
             font-weight: bold;
-            color: #00ffff; /* Cyan pour le temps */
+            color: #ffffff;
+            font-size: 1.2em;
         }
         
-        /* Animation pour simuler le "plantage" visuellement */
         @keyframes clignoter {
             0%   { opacity: 1; }
-            50%  { opacity: 0.2; }
+            50%  { opacity: 0.1; }
             100% { opacity: 1; }
         }
 
         .en-cours {
-            color: #ffcc00; /* Jaune/Orange pour le chargement */
-            animation: clignoter 0.3s infinite;
+            color: #ffff00; /* Jaune d'avertissement */
+            animation: clignoter 0.2s infinite;
+            font-size: 1.1em;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>&#x26A0; GEL CRITIQUE DU SYSTÈME &#x26A0;</h1>
+        <h1>&#x26A0; BLOCAGE DE 100 SECONDES INITIÉ &#x26A0;</h1>
 
         <label for="lagRange">
             DÉLAI DE BLOCAGE (Lag) : 
-            <span id="valeurLag">0</span> ms
+            <span id="valeurLag">100000</span> ms
         </label>
-        <input type="range" id="lagRange" min="0" max="15000" value="0" step="500">
+        <input type="range" id="lagRange" min="0" max="100000" value="100000" step="1000">
 
-        <button id="lagButton" onclick="simulerLag()">INITIER LE BLOCAGE (DANGER)</button>
+        <button id="lagButton" onclick="simulerLag()">LANCER LA PROCÉDURE DE GEL CRITIQUE</button>
 
         <div id="resultat">
-            [SYSTÈME PRÊT] Attendez l'initiation du processus.
+            [SYSTÈME PRÊT] Attention : Un blocage de cette durée peut nécessiter de forcer la fermeture de l'onglet.
         </div>
     </div>
 
@@ -100,14 +104,14 @@
         const resultatDiv = document.getElementById('resultat');
         const lagButton = document.getElementById('lagButton');
 
-        // Met à jour l'affichage du délai
         lagRange.addEventListener('input', function() {
             valeurLagSpan.textContent = this.value;
         });
 
-        // Fonction de blocage du thread principal (LE LAG)
+        // Fonction de blocage du thread principal (LE LAG EXTRÊME)
         function bloquerExecution(dureeMs) {
             const debut = Date.now();
+            // La boucle va tourner pendant 100 secondes (si choisi)
             while (Date.now() < debut + dureeMs) {
                 // Le navigateur est gelé ici.
             }
@@ -116,28 +120,25 @@
         function simulerLag() {
             const dureeLag = parseInt(lagRange.value);
             
-            // Préparer l'interface pour le gel
             lagButton.disabled = true;
-            lagButton.textContent = 'GEL EN COURS... NE PAS CLIQUER';
-            resultatDiv.innerHTML = '<span class="en-cours">ERREUR SYSTÈME CRITIQUE : Traitement de ' + dureeLag + ' ms en cours. L\'interface va se bloquer.</span>';
+            lagButton.textContent = 'BLOCAGE ACTIF... (PATIENCE)';
+            resultatDiv.innerHTML = '<span class="en-cours">ATTENTION ! INTERFACE GELÉE POUR ' + (dureeLag / 1000).toFixed(1) + ' SECONDES !</span>';
             
-            // --- BLOCAGE EXTRÊME ---
-            // On utilise un petit setTimeout pour s'assurer que l'interface a eu le temps de se mettre à jour
-            // juste avant de geler (sinon, le message "GEL EN COURS..." n'apparaît pas).
+            // On utilise un petit setTimeout pour que l'alerte CSS s'affiche AVANT de geler
             setTimeout(() => {
                 const heureDebut = new Date();
                 bloquerExecution(dureeLag);
                 const heureFin = new Date();
 
-                // Afficher le résultat après le dégel
+                // Afficher le résultat après le dégel (si le navigateur n'a pas planté)
                 resultatDiv.innerHTML = `
-                    <p style="color: #00ff00;">✅ **DÉGEL RÉUSSI** : Opération terminée.</p>
-                    <p>Durée du blocage : ${dureeLag} ms (${(dureeLag / 1000).toFixed(1)} secondes)</p>
+                    <p style="color: #00ff00;">✅ **DÉGEL SUCCÈS** : Le traitement a repris.</p>
+                    <p>Durée du blocage : <strong>${dureeLag} ms</strong> (${(dureeLag / 1000).toFixed(1)} secondes)</p>
                     <p>Début : ${heureDebut.toLocaleTimeString()}<br>Fin : ${heureFin.toLocaleTimeString()}</p>
                 `;
                 lagButton.disabled = false;
-                lagButton.textContent = 'INITIER LE BLOCAGE (DANGER)';
-            }, 10); // Petit délai pour laisser le temps au DOM de se mettre à jour
+                lagButton.textContent = 'LANCER LA PROCÉDURE DE GEL CRITIQUE';
+            }, 10);
         }
     </script>
 
