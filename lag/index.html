@@ -3,14 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pac-Man Niveaux Aléatoires</title>
+<title>Pac-Man Niveaux Aléatoires (Position Corrigée)</title>
 <style>
+    /* VARIABLES CSS pour faciliter la maintenance */
+    :root {
+        --cell-size: 20px; /* Taille de la cellule de grille */
+        --pacman-size: 18px; /* Taille de Pac-Man */
+        --center-offset: 1px; /* (20px - 18px) / 2 = 1px */
+    }
+    
     /* Styles de base et du corps */
     body {
         margin: 0;
         padding: 0;
         display: flex;
-        flex-direction: column; /* Organiser verticalement */
+        flex-direction: column;
         justify-content: center;
         align-items: center;
         height: 100vh;
@@ -36,8 +43,9 @@
         height: 400px;
         background: #000;
         display: grid;
-        grid-template-columns: repeat(20, 20px);
-        grid-template-rows: repeat(20, 20px);
+        /* Utilisation de la variable CSS pour la grille */
+        grid-template-columns: repeat(20, var(--cell-size));
+        grid-template-rows: repeat(20, var(--cell-size));
         border: 4px solid #00FFFF;
         box-shadow: 0 0 20px #00FFFF, inset 0 0 10px #00FFFF;
         box-sizing: content-box; 
@@ -68,8 +76,8 @@
     /* Pac-Man 😋 - La star du jeu */
     #pacman {
         position: absolute;
-        width: 18px;
-        height: 18px;
+        width: var(--pacman-size); /* Utilisation de la variable */
+        height: var(--pacman-size); /* Utilisation de la variable */
         background: #FFD700;
         border-radius: 50%;
         z-index: 10;
@@ -107,10 +115,11 @@
     const levelDisplay = document.getElementById('level-display');
     const scoreDisplay = document.getElementById('score-display');
 
-    const size = 20; // Taille cellule (20x20px)
-    const pacmanSize = 18; // Taille de Pac-Man (18x18px)
-    const offset = (size - pacmanSize) / 2; // Décalage pour centrer (1px)
-    
+    // Récupérer les valeurs du CSS pour un calcul exact
+    const size = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')); // 20
+    const pacmanSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pacman-size')); // 18
+    const offset = (size - pacmanSize) / 2; // 1
+
     const gridCols = 20;
     const gridRows = 20;
     
@@ -123,23 +132,14 @@
 
     // --- 1. Logique de Progression de Niveau ---
 
-    /**
-     * Fait progresser le jeu au niveau suivant.
-     */
     function nextLevel() {
         currentLevel++;
         levelDisplay.textContent = `Niveau: ${currentLevel}`;
-        
-        // Réinitialiser le jeu avec un nouveau labyrinthe
         initGame();
     }
 
-    /**
-     * Vérifie si le niveau est terminé.
-     */
     function checkWinCondition() {
         if (dotsRemaining === 0) {
-            // Un petit délai pour que le dernier point disparaisse avant de passer au niveau
             setTimeout(nextLevel, 500);
         }
     }
@@ -151,7 +151,7 @@
         for (let r = 0; r < gridRows; r++) {
             tempMaze[r] = [];
             for (let c = 0; c < gridCols; c++) {
-                tempMaze[r][c] = 1; // 1 = Mur
+                tempMaze[r][c] = 1;
             }
         }
         return tempMaze;
@@ -164,7 +164,7 @@
         const startC = 1;
         
         stack.push({ r: startR, c: startC });
-        maze[startR][startC] = 0; // 0 = Chemin
+        maze[startR][startC] = 0;
 
         while (stack.length > 0) {
             const current = stack.pop();
@@ -195,29 +195,23 @@
         }
     }
     
-    /**
-     * Dessine le labyrinthe et compte les points.
-     */
     function drawMaze() {
         game.innerHTML = '';
         grid.length = 0;
         dotsRemaining = 0;
 
-        // Ajouter les points (2) dans les chemins (0)
         for(let r=0;r<gridRows;r++){
             for(let c=0;c<gridCols;c++){
                 if(maze[r][c] === 0){
-                    maze[r][c] = 2; // 2 = Point
+                    maze[r][c] = 2; 
                     dotsRemaining++;
                 }
             }
         }
         
-        // Retirer le point de la case de départ de Pac-Man
         maze[pac.row][pac.col] = 0;
         dotsRemaining--;
 
-        // Dessin dans le DOM
         for(let r=0;r<gridRows;r++){
             for(let c=0;c<gridCols;c++){
                 const cell = document.createElement('div');
@@ -234,10 +228,10 @@
         }
     }
 
-    // --- 3. Contrôles et Mouvement (avec Mise à Jour de Score) ---
+    // --- 3. Contrôles et Mouvement (avec Correction de Position Fiable) ---
 
     function updatePacmanPosition() {
-        // Le calcul pour centrer le 18x18 dans le 20x20
+        // Formule de centrage fiable : (Position * Taille cellule) + Décalage
         pacman.style.left = (pac.col * size + offset) + 'px'; 
         pacman.style.top = (pac.row * size + offset) + 'px';
     }
@@ -252,7 +246,6 @@
         pacman.style.transform = `rotate(${rotation}deg)`;
     }
     
-    // Pour ne pas ajouter un nouvel écouteur de touche à chaque niveau
     let isListenerActive = false; 
 
     function handleKeyDown(e) {
@@ -270,24 +263,20 @@
             setPacmanRotation(pac.direction);
         }
 
-        // Vérifier mur et limites
         if(newRow>=0 && newRow<gridRows && newCol>=0 && newCol<gridCols && maze[newRow][newCol]!==1){
             
-            // Déplacer Pac-Man
             pac.row=newRow; pac.col=newCol;
             updatePacmanPosition();
 
-            // Manger un point
             const idx = newRow*gridCols+newCol;
             if(grid[idx].type===2){
-                // Mise à jour des scores et décompte
                 score += 10; 
                 dotsRemaining--;
                 scoreDisplay.textContent = `Score: ${score}`;
 
-                grid[idx].type=0; // Marquer la case comme vide
-                maze[newRow][newCol] = 0; // Mettre à jour la matrice
-                grid[idx].el.innerHTML=''; // enlever dot visuellement
+                grid[idx].type=0; 
+                maze[newRow][newCol] = 0; 
+                grid[idx].el.innerHTML=''; 
 
                 checkWinCondition();
             }
@@ -315,7 +304,7 @@
         }
     }
 
-    // Démarrer le jeu au niveau 1
+    // Démarrer le jeu
     initGame(); 
 </script>
 </body>
