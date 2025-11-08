@@ -3,77 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hôtel du Crépuscule - Dossier d'Enquête</title>
+    <title>Simulateur de Lag</title>
     <style>
         body {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: #0d0d0d; /* Presque noir */
-            color: #ccc; /* Gris clair pour un effet "vieux document" */
-            margin: 40px;
-            line-height: 1.6;
-            border: 2px solid #550000; /* Bordure rouge sang discrète */
-            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #1c1c1c;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 50px;
+        }
+        .container {
+            background-color: #2e2e2e;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            width: 350px;
         }
         h1 {
-            color: #ff4444; /* Rouge effrayant */
+            color: #f7b731;
             text-align: center;
-            border-bottom: 1px solid #550000;
-            padding-bottom: 10px;
-            text-transform: uppercase;
         }
-        h2 {
-            color: #ff8888;
-            margin-top: 30px;
-        }
-        .introduction {
-            margin-bottom: 30px;
-            font-size: 1.1em;
-            background-color: #1a1a1a;
-            padding: 15px;
-            border-left: 5px solid #ff4444;
-        }
-        .choix {
-            list-style-type: none;
-            padding: 0;
-        }
-        .choix li {
-            margin: 10px 0;
-        }
-        .choix a {
-            color: #ffcccc;
-            text-decoration: none;
+        label {
             display: block;
-            padding: 8px;
-            border: 1px dashed #550000;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
             transition: background-color 0.3s;
         }
-        .choix a:hover {
-            background-color: #330000;
-            color: #ffffff;
+        button:hover {
+            background-color: #357bd8;
+        }
+        #resultat {
+            margin-top: 25px;
+            padding: 15px;
+            border: 1px solid #f7b731;
+            background-color: #3a3a3a;
+            min-height: 40px;
+            border-radius: 4px;
+        }
+        #valeurLag {
+            font-weight: bold;
+            color: #f7b731;
         }
     </style>
 </head>
 <body>
 
-    <h1>&#x1F47B; L'HÔTEL DU CRÉPUSCULE &#x1F47B;</h1>
-    <h2>Dossier d'Enquête Initial</h2>
+    <div class="container">
+        <h1>Simulateur de Délai 🐌</h1>
 
-    <div class="introduction">
-        <p><strong>Fichier :</strong> BLACKWOOD_INTRUSION_LOG_01</p>
-        <p><strong>Sujet :</strong> Elara Vance (Journaliste d'investigation)</p>
-        <p>Vous êtes <strong>Elara Vance</strong>. Une vieille légende urbaine vous a menée jusqu'à l'<strong>Hôtel Blackwood</strong>, surnommé l'« Hôtel du Crépuscule », un établissement abandonné il y a soixante ans suite à une série de disparitions inexpliquées. La nuit est tombée, une brume épaisse enveloppe le bâtiment. Vous avez votre lampe de poche, votre dictaphone et un enregistreur EMF (champ électromagnétique).</p>
-        <p>Vous vous tenez devant les portes doubles en bois vermoulu de l'entrée principale.</p>
+        <label for="lagRange">
+            Degré de "Lag" (Délai de traitement) : 
+            <span id="valeurLag">0</span> ms
+        </label>
+        <input type="range" id="lagRange" min="0" max="5000" value="0" step="100">
+
+        <button onclick="simulerLag()">Lancer l'Action Lente</button>
+
+        <div id="resultat">
+            Le résultat s'affichera ici après le délai.
+        </div>
     </div>
 
-    <h3>&#x1F50C; Que faites-vous ?</h3>
+    <script>
+        // Récupérer les éléments
+        const lagRange = document.getElementById('lagRange');
+        const valeurLagSpan = document.getElementById('valeurLag');
+        const resultatDiv = document.getElementById('resultat');
 
-    <ul class="choix">
-        <li><a href="#" onclick="alert('Ceci est une simulation. Votre choix est [A]. Continuez en répondant !')"><strong>[A]</strong> Pousser les portes et entrer par l'**entrée principale**.</a></li>
-        <li><a href="#" onclick="alert('Ceci est une simulation. Votre choix est [B]. Continuez en répondant !')"><strong>[B]</strong> Faire le tour pour chercher une **entrée de service** ou une autre ouverture.</a></li>
-        <li><a href="#" onclick="alert('Ceci est une simulation. Votre choix est [C]. Continuez en répondant !')"><strong>[C]</strong> Allumer l'**enregistreur EMF** et attendre une minute avant d'entrer.</a></li>
-    </ul>
+        // Mettre à jour l'affichage du délai en temps réel
+        lagRange.addEventListener('input', function() {
+            valeurLagSpan.textContent = this.value;
+        });
 
-    <p style="margin-top: 40px; text-align: center; color: #888;"><em>(Veuillez répondre avec la lettre de votre choix pour continuer l'histoire.)</em></p>
+        /**
+         * Fonction pour bloquer l'exécution du script (simule le lag)
+         * @param {number} dureeMs - Durée du blocage en millisecondes
+         */
+        function bloquerExecution(dureeMs) {
+            const debut = Date.now();
+            // Boucle vide qui bloque le thread principal
+            while (Date.now() < debut + dureeMs) {
+                // Rien ici, on attend juste
+            }
+        }
+
+        /**
+         * Simule une action qui prend du temps (le lag)
+         */
+        function simulerLag() {
+            const dureeLag = parseInt(lagRange.value);
+            resultatDiv.innerHTML = '<strong>Traitement en cours...</strong> Attendez ' + dureeLag + ' ms...';
+
+            // --- L'étape qui cause le "lag" ---
+            bloquerExecution(dureeLag);
+            // -----------------------------------
+
+            const finTraitement = new Date().toLocaleTimeString();
+
+            // Afficher le résultat après le "lag"
+            resultatDiv.innerHTML = `
+                <p>✅ **Terminé !** L'action a été complétée à ${finTraitement}.</p>
+                <p>Le script a été bloqué pendant ${dureeLag} millisecondes.</p>
+            `;
+        }
+    </script>
 
 </body>
 </html>
