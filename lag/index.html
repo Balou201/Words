@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pac-Man Neon Retro</title>
+<title>Pac-Man Génération Aléatoire</title>
 <style>
     /* Styles de base et du corps */
     body {
@@ -61,7 +61,8 @@
         background: #FFD700; /* Or/Jaune plus riche */
         border-radius: 50%;
         z-index: 10;
-        transition: left 0.1s linear, top 0.1s linear, transform 0.1s; /* Transition plus fluide et pour la rotation */
+        /* La transition pour la rotation est importante pour le look */
+        transition: left 0.1s linear, top 0.1s linear, transform 0.1s;
         box-shadow: 0 0 15px #FFD700; /* Lueur Pac-Man */
         
         /* Forme de bouche utilisant clip-path */
@@ -69,6 +70,9 @@
         /* Animation de la bouche */
         animation: chomp 0.2s infinite step-end;
         transform-origin: center;
+        /* Correction visuelle du décalage */
+        left: 1px;
+        top: 1px; 
     }
 
     /* Keyframes pour les animations */
@@ -90,57 +94,134 @@
 <script>
     const game = document.getElementById('game');
     const pacman = document.getElementById('pacman');
-    const size = 20; // taille cellule
+    const size = 20; // Taille cellule (20x20px)
+    const gridCols = 20;
+    const gridRows = 20;
     const grid = [];
+    let maze = [];
 
-    // labyrinthe simple (0 = vide, 1 = mur, 2 = point)
-    const maze = [
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,2,2,2,1,2,2,2,2,2,2,2,2,1,2,2,2,2,2,1],
-        [1,2,1,2,1,2,1,1,1,2,1,1,1,2,1,2,1,2,2,1],
-        [1,2,1,2,2,2,2,2,1,2,1,2,2,2,1,2,1,2,2,1],
-        [1,2,1,1,1,1,1,2,1,2,1,2,1,1,1,1,1,2,2,1],
-        [1,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2,2,2,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        // Remplir le reste avec des murs pour que la grille soit complète (20x20)
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    ];
+    // --- 1. Génération Aléatoire du Labyrinthe (DFS) ---
 
-    const rows = maze.length;
-    const cols = maze[0].length;
-
-    // créer le labyrinthe
-    for(let r=0;r<rows;r++){
-        for(let c=0;c<cols;c++){
-            const cell = document.createElement('div');
-            if(maze[r][c]===1) cell.className='wall';
-            else if(maze[r][c]===2){
-                cell.className='dot-container'; // Utiliser un conteneur pour centrer
-                const dot = document.createElement('div');
-                dot.className='dot';
-                cell.appendChild(dot);
+    /**
+     * Crée une grille vide (tous des murs)
+     * @returns {Array<Array<number>>} La grille (1 = mur)
+     */
+    function createEmptyMaze() {
+        const tempMaze = [];
+        for (let r = 0; r < gridRows; r++) {
+            tempMaze[r] = [];
+            for (let c = 0; c < gridCols; c++) {
+                tempMaze[r][c] = 1; // 1 = Mur
             }
-            game.appendChild(cell);
-            grid.push({row:r,col:c,type:maze[r][c],el:cell});
         }
+        return tempMaze;
     }
 
-    // position pacman
+    /**
+     * Génère un labyrinthe aléatoire en utilisant l'algorithme DFS.
+     * Les chemins sont créés aux coordonnées paires, les murs restent aux impaires.
+     */
+    function generateRandomMaze() {
+        maze = createEmptyMaze();
+        const stack = [];
+        
+        // Démarrer au coin (1, 1) - doit être impair
+        const startR = 1;
+        const startC = 1;
+        
+        stack.push({ r: startR, c: startC });
+        maze[startR][startC] = 0; // 0 = Chemin
+
+        while (stack.length > 0) {
+            const current = stack.pop();
+            const { r, c } = current;
+            
+            // Directions (haut, bas, gauche, droite)
+            const directions = [
+                { dr: -2, dc: 0 }, { dr: 2, dc: 0 }, 
+                { dr: 0, dc: -2 }, { dr: 0, dc: 2 }
+            ];
+            
+            // Mélanger les directions pour le côté aléatoire
+            directions.sort(() => Math.random() - 0.5);
+
+            for (const dir of directions) {
+                const nextR = r + dir.dr;
+                const nextC = c + dir.dc;
+
+                // Vérifier si la nouvelle cellule est dans les limites et non visitée (est toujours un mur)
+                if (nextR > 0 && nextR < gridRows - 1 && nextC > 0 && nextC < gridCols - 1 && maze[nextR][nextC] === 1) {
+                    // Supprimer le mur entre la cellule actuelle et la suivante
+                    const wallR = r + dir.dr / 2;
+                    const wallC = c + dir.dc / 2;
+                    maze[wallR][wallC] = 0; // 0 = Chemin
+
+                    // Marquer la prochaine cellule comme chemin
+                    maze[nextR][nextC] = 0;
+                    
+                    // Remettre l'actuelle dans la pile (pour les autres voisins) et ajouter la nouvelle
+                    stack.push(current); 
+                    stack.push({ r: nextR, c: nextC });
+                    break; // S'arrêter après avoir trouvé un chemin pour le côté "profondeur"
+                }
+            }
+        }
+    }
+    
+    // --- 2. Initialisation du Jeu ---
+
+    generateRandomMaze();
+    
+    // Ajout des points (Pac-Dots) dans tous les chemins (0)
+    for(let r=0;r<gridRows;r++){
+        for(let c=0;c<gridCols;c++){
+            if(maze[r][c] === 0){
+                 maze[r][c] = 2; // 2 = Point
+            }
+        }
+    }
+    
+    // S'assurer que le point de départ est vide (pas de dot)
+    maze[1][1] = 0; 
+
+
+    // Position initiale de Pac-Man
     let pac = {row:1, col:1, direction: 'right'};
-    pacman.style.left = pac.col*size+'px';
-    pacman.style.top = pac.row*size+'px';
+
+    /**
+     * Dessine le labyrinthe dans le DOM à partir de la matrice `maze`.
+     */
+    function drawMaze() {
+        game.innerHTML = ''; // Nettoyer l'ancienne grille
+        grid.length = 0; // Vider l'ancienne grille JS
+        
+        for(let r=0;r<gridRows;r++){
+            for(let c=0;c<gridCols;c++){
+                const cell = document.createElement('div');
+                if(maze[r][c]===1) cell.className='wall';
+                else if(maze[r][c]===2){
+                    cell.className='dot-container';
+                    const dot = document.createElement('div');
+                    dot.className='dot';
+                    cell.appendChild(dot);
+                }
+                game.appendChild(cell);
+                grid.push({row:r,col:c,type:maze[r][c],el:cell});
+            }
+        }
+    }
+    
+    drawMaze(); // Dessiner la grille une fois qu'elle est générée et remplie de dots
+
+    // Correction du bug : Positionner Pac-Man avec un léger décalage pour le centrer parfaitement
+    // (col * size + (size - width) / 2) -> (1*20 + (20-18)/2) = 21px
+    function updatePacmanPosition() {
+        // Le 1px ici compense les 1px de border/marge et centre mieux le 18x18 dans la case 20x20
+        pacman.style.left = (pac.col * size) + 1 + 'px'; 
+        pacman.style.top = (pac.row * size) + 1 + 'px';
+    }
+
+    updatePacmanPosition();
 
     /**
      * Applique la rotation de Pac-Man en fonction de sa direction
@@ -153,12 +234,14 @@
         else if (dir === 'left') rotation = 180;
         else if (dir === 'up') rotation = 270;
 
+        // On combine la rotation et l'animation de bouche
         pacman.style.transform = `rotate(${rotation}deg)`;
     }
 
     setPacmanRotation(pac.direction); // Initialiser la rotation
 
-    // contrôles
+    // --- 3. Contrôles et Logique du Jeu ---
+
     document.addEventListener('keydown', e=>{
         let newRow = pac.row;
         let newCol = pac.col;
@@ -169,30 +252,25 @@
         else if(e.key==='ArrowLeft'){ newCol--; newDir='left'; }
         else if(e.key==='ArrowRight'){ newCol++; newDir='right'; }
 
-        // vérifier mur et limites
-        if(newRow>=0 && newRow<rows && newCol>=0 && newCol<cols && maze[newRow][newCol]!==1){
-            // Mettre à jour la direction AVANT de déplacer (pour rotation)
-            if (newDir !== pac.direction) {
-                pac.direction = newDir;
-                setPacmanRotation(pac.direction);
-            }
+        // Mettre à jour la direction AVANT de déplacer (pour rotation)
+        if (newDir !== pac.direction) {
+            pac.direction = newDir;
+            setPacmanRotation(pac.direction);
+        }
+
+        // Vérifier mur et limites
+        if(newRow>=0 && newRow<gridRows && newCol>=0 && newCol<gridCols && maze[newRow][newCol]!==1){
             
             // Déplacer Pac-Man
             pac.row=newRow; pac.col=newCol;
-            pacman.style.left = pac.col*size+'px';
-            pacman.style.top = pac.row*size+'px';
-            
+            updatePacmanPosition(); // Appliquer la nouvelle position
+
             // manger un point
-            const idx = newRow*cols+newCol;
+            const idx = newRow*gridCols+newCol;
             if(grid[idx].type===2){
-                grid[idx].type=0;
-                grid[idx].el.innerHTML=''; // enlever dot
-            }
-        } else {
-             // Si la direction a changé mais le mouvement est bloqué, on change quand même la rotation
-             if (newDir !== pac.direction) {
-                pac.direction = newDir;
-                setPacmanRotation(pac.direction);
+                grid[idx].type=0; // Marquer la case comme vide
+                maze[newRow][newCol] = 0; // Mettre à jour la matrice
+                grid[idx].el.innerHTML=''; // enlever dot visuellement
             }
         }
     });
