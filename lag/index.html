@@ -1,198 +1,316 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pac-Man Niveaux Aléatoires (Correction Transform)</title>
+<style>
+    /* VARIABLES CSS pour faciliter la maintenance */
+    :root {
+        --cell-size: 20px; /* Taille de la cellule de grille */
+        --pacman-size: 18px; /* Taille de Pac-Man */
+    }
+    
+    /* Styles de base et du corps */
+    body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: #0d0d0d;
+        font-family: 'Arial', sans-serif;
+        color: #fff;
+    }
+    
+    /* Zone d'information (Score/Niveau) */
+    #info-bar {
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        text-shadow: 0 0 10px #FFD700;
+        color: #FFFF00;
+        display: flex;
+        gap: 50px;
+    }
+
+    /* Conteneur du jeu */
+    #game {
+        position: relative;
+        width: 400px;
+        height: 400px;
+        background: #000;
+        display: grid;
+        grid-template-columns: repeat(20, var(--cell-size));
+        grid-template-rows: repeat(20, var(--cell-size));
+        border: 4px solid #00FFFF;
+        box-shadow: 0 0 20px #00FFFF, inset 0 0 10px #00FFFF;
+        box-sizing: content-box; 
+    }
+    
+    /* Murs 🧱 - Épais et stylisés */
+    .wall {
+        background: #0000AA;
+        border: 1px solid #0000FF;
+        box-shadow: inset 0 0 8px #0000FF, 0 0 5px #0000FF;
+    }
+
+    /* Points (Pac-Dots) 🟡 - Plus brillants */
+    .dot-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .dot {
+        width: 8px;
+        height: 8px;
+        background: #FFFF00;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #FFFF00, 0 0 20px #FFD700;
+        animation: pulse 1.5s infinite alternate;
+    }
+
+    /* Pac-Man 😋 - La star du jeu */
+    #pacman {
+        position: absolute;
+        width: var(--pacman-size);
+        height: var(--pacman-size);
+        background: #FFD700;
+        border-radius: 50%;
+        z-index: 10;
+        
+        /* CORRECTION: Positionnement de base et transition */
+        left: 0;
+        top: 0;
+        /* La transition inclut maintenant la translation */
+        transition: left 0.1s linear, top 0.1s linear, transform 0.1s;
+        
+        box-shadow: 0 0 15px #FFD700;
+        
+        clip-path: polygon(100% 0, 100% 50%, 75% 50%, 100% 100%, 0 100%, 0 0);
+        animation: chomp 0.2s infinite step-end;
+        transform-origin: center;
+    }
+
+    /* Keyframes pour les animations */
+    @keyframes chomp {
+        0% { clip-path: polygon(100% 0, 100% 50%, 75% 50%, 100% 100%, 0 100%, 0 0); }
+        50% { clip-path: circle(50% at 50% 50%); }
+    }
+    
+    @keyframes pulse {
+        from { opacity: 0.8; transform: scale(1); }
+        to { opacity: 1; transform: scale(1.1); }
+    }
+</style>
+</head>
+<body>
+<div id="info-bar">
+    <div id="level-display">Niveau: 1</div>
+    <div id="score-display">Score: 0</div>
+</div>
+<div id="game"></div>
+<div id="pacman"></div>
+
 <script>
-    const game = document.getElementById('game');
-    const pacman = document.getElementById('pacman');
-    const levelDisplay = document.getElementById('level-display');
-    const scoreDisplay = document.getElementById('score-display');
+    const game = document.getElementById('game');
+    const pacman = document.getElementById('pacman');
+    const levelDisplay = document.getElementById('level-display');
+    const scoreDisplay = document.getElementById('score-display');
 
-    // Récupérer les valeurs du CSS pour un calcul exact
-    const size = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')); // 20
-    const pacmanSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pacman-size')); // 18
-    const offset = (size - pacmanSize) / 2; // 1
+    // Récupération de la taille des cellules (20px)
+    const size = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
+    
+    const gridCols = 20;
+    const gridRows = 20;
+    
+    let grid = [];
+    let maze = [];
+    let pac = {row:1, col:1, direction: 'right'};
+    let currentLevel = 1;
+    let score = 0;
+    let dotsRemaining = 0;
 
-    const gridCols = 20;
-    const gridRows = 20;
-    
-    let grid = [];
-    let maze = [];
-    let pac = {row:1, col:1, direction: 'right'};
-    let currentLevel = 1;
-    let score = 0;
-    let dotsRemaining = 0;
+    // --- 1. Logique de Progression de Niveau ---
 
-    // --- 1. Logique de Progression de Niveau ---
+    function nextLevel() {
+        currentLevel++;
+        levelDisplay.textContent = `Niveau: ${currentLevel}`;
+        initGame();
+    }
 
-    function nextLevel() {
-        currentLevel++;
-        levelDisplay.textContent = `Niveau: ${currentLevel}`;
-        initGame();
-    }
+    function checkWinCondition() {
+        if (dotsRemaining === 0) {
+            setTimeout(nextLevel, 500);
+        }
+    }
 
-    function checkWinCondition() {
-        if (dotsRemaining === 0) {
-            setTimeout(nextLevel, 500);
-        }
-    }
+    // --- 2. Génération Aléatoire du Labyrinthe (DFS) ---
+    function createEmptyMaze() {
+        const tempMaze = [];
+        for (let r = 0; r < gridRows; r++) {
+            tempMaze[r] = [];
+            for (let c = 0; c < gridCols; c++) {
+                tempMaze[r][c] = 1;
+            }
+        }
+        return tempMaze;
+    }
 
+    function generateRandomMaze() {
+        maze = createEmptyMaze();
+        const stack = [];
+        const startR = 1;
+        const startC = 1;
+        
+        stack.push({ r: startR, c: startC });
+        maze[startR][startC] = 0;
 
-    // --- 2. Génération Aléatoire du Labyrinthe (DFS) ---
-    function createEmptyMaze() {
-        const tempMaze = [];
-        for (let r = 0; r < gridRows; r++) {
-            tempMaze[r] = [];
-            for (let c = 0; c < gridCols; c++) {
-                tempMaze[r][c] = 1;
-            }
-        }
-        return tempMaze;
-    }
+        while (stack.length > 0) {
+            const current = stack.pop();
+            const { r, c } = current;
+            
+            const directions = [
+                { dr: -2, dc: 0 }, { dr: 2, dc: 0 }, 
+                { dr: 0, dc: -2 }, { dr: 0, dc: 2 }
+            ];
+            
+            directions.sort(() => Math.random() - 0.5);
 
-    function generateRandomMaze() {
-        maze = createEmptyMaze();
-        const stack = [];
-        const startR = 1;
-        const startC = 1;
-        
-        stack.push({ r: startR, c: startC });
-        maze[startR][startC] = 0;
+            for (const dir of directions) {
+                const nextR = r + dir.dr;
+                const nextC = c + dir.dc;
 
-        while (stack.length > 0) {
-            const current = stack.pop();
-            const { r, c } = current;
-            
-            const directions = [
-                { dr: -2, dc: 0 }, { dr: 2, dc: 0 }, 
-                { dr: 0, dc: -2 }, { dr: 0, dc: 2 }
-            ];
-            
-            directions.sort(() => Math.random() - 0.5);
+                if (nextR > 0 && nextR < gridRows - 1 && nextC > 0 && nextC < gridCols - 1 && maze[nextR][nextC] === 1) {
+                    const wallR = r + dir.dr / 2;
+                    const wallC = c + dir.dc / 2;
+                    maze[wallR][wallC] = 0;
+                    maze[nextR][nextC] = 0;
+                    
+                    stack.push(current); 
+                    stack.push({ r: nextR, c: nextC });
+                    break;
+                }
+            }
+        }
+    }
+    
+    function drawMaze() {
+        game.innerHTML = '';
+        grid.length = 0;
+        dotsRemaining = 0;
 
-            for (const dir of directions) {
-                const nextR = r + dir.dr;
-                const nextC = c + dir.dc;
+        for(let r=0;r<gridRows;r++){
+            for(let c=0;c<gridCols;c++){
+                if(maze[r][c] === 0){
+                    maze[r][c] = 2; 
+                    dotsRemaining++;
+                }
+            }
+        }
+        
+        maze[pac.row][pac.col] = 0;
+        dotsRemaining--;
 
-                if (nextR > 0 && nextR < gridRows - 1 && nextC > 0 && nextC < gridCols - 1 && maze[nextR][nextC] === 1) {
-                    const wallR = r + dir.dr / 2;
-                    const wallC = c + dir.dc / 2;
-                    maze[wallR][wallC] = 0;
-                    maze[nextR][nextC] = 0;
-                    
-                    stack.push(current); 
-                    stack.push({ r: nextR, c: nextC });
-                    break;
-                }
-            }
-        }
-    }
-    
-    function drawMaze() {
-        game.innerHTML = ''; // C'est OK car Pac-Man n'est plus un enfant de #game
-        grid.length = 0;
-        dotsRemaining = 0;
+        for(let r=0;r<gridRows;r++){
+            for(let c=0;c<gridCols;c++){
+                const cell = document.createElement('div');
+                if(maze[r][c]===1) cell.className='wall';
+                else if(maze[r][c]===2){
+                    cell.className='dot-container';
+                    const dot = document.createElement('div');
+                    dot.className='dot';
+                    cell.appendChild(dot);
+                }
+                game.appendChild(cell);
+                grid.push({row:r,col:c,type:maze[r][c],el:cell});
+            }
+        }
+    }
 
-        for(let r=0;r<gridRows;r++){
-            for(let c=0;c<gridCols;c++){
-                if(maze[r][c] === 0){
-                    maze[r][c] = 2; 
-                    dotsRemaining++;
-                }
-            }
-        }
-        
-        maze[pac.row][pac.col] = 0;
-        dotsRemaining--;
+    // --- 3. Contrôles et Mouvement (Centrage par Translation) ---
 
-        for(let r=0;r<gridRows;r++){
-            for(let c=0;c<gridCols;c++){
-                const cell = document.createElement('div');
-                if(maze[r][c]===1) cell.className='wall';
-                else if(maze[r][c]===2){
-                    cell.className='dot-container';
-                    const dot = document.createElement('div');
-                    dot.className='dot';
-                    cell.appendChild(dot);
-                }
-                game.appendChild(cell);
-                grid.push({row:r,col:c,type:maze[r][c],el:cell});
-            }
-        }
-    }
+    function updatePacmanPosition() {
+        // Positionnement au coin supérieur gauche de la cellule
+        pacman.style.left = (pac.col * size) + 'px'; 
+        pacman.style.top = (pac.row * size) + 'px';
+        // Le centrage est maintenant dans setPacmanRotation via translate
+    }
 
-    // --- 3. Contrôles et Mouvement (avec Correction de Position Fiable) ---
+    function setPacmanRotation(dir) {
+        let rotation = 0;
+        if (dir === 'right') rotation = 0;
+        else if (dir === 'down') rotation = 90;
+        else if (dir === 'left') rotation = 180;
+        else if (dir === 'up') rotation = 270;
 
-    function updatePacmanPosition() {
-        pacman.style.left = (pac.col * size + offset) + 'px'; 
-        pacman.style.top = (pac.row * size + offset) + 'px';
-    }
+        // Centrage PARFAIT : translate(-50%, -50%) décale le Pac-Man de 50% de sa propre taille (18px)
+        // Mais comme nous le positionnons au coin de la cellule, nous voulons le décaler de 50% de la TAILLE DE LA CELLULE.
+        // Puisque size (20) et pacmanSize (18) sont proches, nous utilisons translate(50%, 50%) qui déplace
+        // Pac-Man de la moitié de sa propre taille à droite et en bas.
+        // Pour les 20x20 vs 18x18, le centrage le plus propre est:
+        pacman.style.transform = `translate(1px, 1px) rotate(${rotation}deg)`; 
+        // 1px est l'écart (20-18)/2. C'est plus stable de le mettre ici que dans left/top.
+    }
+    
+    let isListenerActive = false; 
 
-    function setPacmanRotation(dir) {
-        let rotation = 0;
-        if (dir === 'right') rotation = 0;
-        else if (dir === 'down') rotation = 90;
-        else if (dir === 'left') rotation = 180;
-        else if (dir === 'up') rotation = 270;
+    function handleKeyDown(e) {
+        let newRow = pac.row;
+        let newCol = pac.col;
+        let newDir = pac.direction;
 
-        pacman.style.transform = `rotate(${rotation}deg)`;
-    }
-    
-    let isListenerActive = false; 
+        if(e.key==='ArrowUp'){ newRow--; newDir='up'; }
+        else if(e.key==='ArrowDown'){ newRow++; newDir='down'; }
+        else if(e.key==='ArrowLeft'){ newCol--; newDir='left'; }
+        else if(e.key==='ArrowRight'){ newCol++; newDir='right'; }
 
-    function handleKeyDown(e) {
-        let newRow = pac.row;
-        let newCol = pac.col;
-        let newDir = pac.direction;
+        if (newDir !== pac.direction) {
+            pac.direction = newDir;
+            setPacmanRotation(pac.direction);
+        }
 
-        if(e.key==='ArrowUp'){ newRow--; newDir='up'; }
-        else if(e.key==='ArrowDown'){ newRow++; newDir='down'; }
-        else if(e.key==='ArrowLeft'){ newCol--; newDir='left'; }
-        else if(e.key==='ArrowRight'){ newCol++; newDir='right'; }
+        if(newRow>=0 && newRow<gridRows && newCol>=0 && newCol<gridCols && maze[newRow][newCol]!==1){
+            
+            pac.row=newRow; pac.col=newCol;
+            updatePacmanPosition();
 
-        if (newDir !== pac.direction) {
-            pac.direction = newDir;
-            setPacmanRotation(pac.direction);
-        }
+            const idx = newRow*gridCols+newCol;
+            if(grid[idx].type===2){
+                score += 10; 
+                dotsRemaining--;
+                scoreDisplay.textContent = `Score: ${score}`;
 
-        if(newRow>=0 && newRow<gridRows && newCol>=0 && newCol<gridCols && maze[newRow][newCol]!==1){
-            
-            pac.row=newRow; pac.col=newCol;
-            updatePacmanPosition();
+                grid[idx].type=0; 
+                maze[newRow][newCol] = 0; 
+                grid[idx].el.innerHTML=''; 
 
-            const idx = newRow*gridCols+newCol;
-            if(grid[idx].type===2){
-                score += 10; 
-                dotsRemaining--;
-                scoreDisplay.textContent = `Score: ${score}`;
+                checkWinCondition();
+            }
+        }
+    }
 
-                // --- C'est ici qu'étaient les caractères 'Â' et '_' ---
-                grid[idx].type=0; 
-                maze[newRow][newCol] = 0; 
-                grid[idx].el.innerHTML=''; 
+    // --- 4. Fonction d'Initialisation Globale ---
 
-                checkWinCondition();
-            }
-        }
-    }
+    function initGame() {
+        generateRandomMaze();
+        drawMaze();
 
-    // --- 4. Fonction d'Initialisation Globale ---
+        pac.row = 1;
+        pac.col = 1;
+        pac.direction = 'right';
+        updatePacmanPosition();
+        setPacmanRotation(pac.direction);
+        
+        if (!isListenerActive) {
+            document.addEventListener('keydown', handleKeyDown);
+            isListenerActive = true;
+        }
+    }
 
-    function initGame() {
-        // 1. Générer le nouveau labyrinthe et le dessiner
-        generateRandomMaze();
-        drawMaze();
-
-        // 2. Réinitialiser la position et l'apparence de Pac-Man
-        pac.row = 1;
-        pac.col = 1;
-        pac.direction = 'right';
-        updatePacmanPosition();
-        setPacmanRotation(pac.direction);
-        
-        // 3. Activer les écouteurs si ce n'est pas déjà fait
-        if (!isListenerActive) {
-            document.addEventListener('keydown', handleKeyDown);
-            isListenerActive = true;
-        }
-    }
-
-    // Démarrer le jeu
-    initGame(); 
+    // Démarrer le jeu
+    initGame(); 
 </script>
+</body>
+</html>
