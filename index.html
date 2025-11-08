@@ -1,156 +1,36 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Accès restreint — Compte en examen</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compte en examen</title>
 <style>
-  html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
-  body{display:flex;align-items:center;justify-content:center;background:#f4f6f8;color:#111}
-  .card{width:94%;max-width:720px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,.08);padding:28px; text-align:center;}
-  h1{margin:0 0 8px;font-size:22px}
-  p{margin:0 0 16px;color:#555}
-  .muted{font-size:13px;color:#777;margin-top:8px}
-  .spinner{width:48px;height:48px;border-radius:50%;border:5px solid rgba(0,0,0,.08);border-top-color:#1a73e8;margin:18px auto;animation:spin 1s linear infinite;}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .btn{display:inline-block;padding:8px 12px;border-radius:8px;background:#1a73e8;color:white;text-decoration:none;font-weight:600;cursor:pointer;border:0}
-  .btn-secondary{background:transparent;color:#1a73e8;border:1px solid rgba(26,115,232,.12)}
-  .list{margin-top:12px;text-align:left;display:inline-block}
-  code{background:#f3f4f6;padding:2px 6px;border-radius:6px;font-size:13px}
-  footer{margin-top:18px;color:#999;font-size:12px}
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif;
+    background: #f0f0f0;
+    color: #333;
+    text-align: center;
+  }
+  .message {
+    background: white;
+    padding: 30px 40px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+  h1 { margin: 0 0 10px; font-size: 22px; }
+  p { margin: 0; font-size: 16px; }
 </style>
 </head>
 <body>
-  <div class="card" role="main" aria-live="polite">
-    <div class="spinner" aria-hidden="true"></div>
+  <div class="message">
     <h1>Compte en examen</h1>
-    <p>Nous examinons l'activité de votre compte. Pendant l'examen, certains sites et services peuvent être inaccessibles ou renvoyer une erreur.</p>
-
-    <div class="muted">Sites simulés comme bloqués (exemples) :</div>
-    <ul class="list" aria-hidden="true">
-      <li><code>google.com</code></li>
-      <li><code>youtube.com</code></li>
-      <li><code>facebook.com</code></li>
-    </ul>
-
-    <div style="margin-top:14px">
-      <button class="btn" id="tryAgain">Réessayer</button>
-      <button class="btn btn-secondary" id="reveal">C'est une blague</button>
-    </div>
-
-    <footer>Simulation locale — Ceci n'affecte pas réellement votre compte.</footer>
+    <p>Votre compte est actuellement en examen.</p>
+    <p>Certains sites et services sont temporairement inaccessibles.</p>
   </div>
-
-<script>
-/*
-  Comportement :
-  - Bloque/rejette fetch() et XMLHttpRequest vers les domaines listés.
-  - Empêche les clics sur <a> pointant vers ces domaines.
-  - "Réessayer" réaffiche le même écran (simulation).
-  - "C'est une blague" désactive les blocages.
-*/
-
-(function(){
-  const blockedDomains = [
-    "google.com",
-    "youtube.com",
-    "facebook.com",
-    "twitter.com"
-    // ajoute/retire des domaines ici si besoin
-  ];
-
-  function isBlocked(url){
-    try{
-      // supporte strings et Request objects
-      const u = (typeof url === "string") ? url : (url && url.url) || "";
-      // tentatives simples — si l'URL contient le nom de domaine bloqué
-      return blockedDomains.some(domain => u.includes(domain));
-    }catch(e){
-      return false;
-    }
-  }
-
-  // --- override fetch ---
-  const _fetch = window.fetch;
-  window.fetch = function(input, init){
-    if(isBlocked(input)) {
-      return Promise.reject(new TypeError("Accès restreint : le site est indisponible pendant l'examen du compte."));
-    }
-    return _fetch.apply(this, arguments);
-  };
-
-  // --- override XMLHttpRequest ---
-  const _open = XMLHttpRequest.prototype.open;
-  const _send = XMLHttpRequest.prototype.send;
-  XMLHttpRequest.prototype.open = function(method, url){
-    this._url = url;
-    return _open.apply(this, arguments);
-  };
-  XMLHttpRequest.prototype.send = function(body){
-    if(isBlocked(this._url)){
-      // simuler une erreur réseau asynchrone
-      const xhr = this;
-      setTimeout(()=> {
-        if(typeof xhr.onerror === "function") xhr.onerror(new Error("Network Error: accès restreint"));
-        xhr.readyState = 4;
-        xhr.status = 0;
-        if(typeof xhr.onreadystatechange === "function") xhr.onreadystatechange();
-      }, 20);
-      return;
-    }
-    return _send.apply(this, arguments);
-  };
-
-  // --- bloquer clics sur liens ---
-  document.addEventListener('click', function(e){
-    const a = e.target.closest('a');
-    if(!a) return;
-    const href = a.getAttribute('href') || "";
-    if(isBlocked(href)){
-      e.preventDefault();
-      e.stopPropagation();
-      alert("Accès restreint : ce site est injoignable pendant l'examen du compte.");
-    }
-  }, true);
-
-  // --- empêcher soumissions de formulaires vers domaines bloqués ---
-  document.addEventListener('submit', function(e){
-    const form = e.target;
-    const action = form.getAttribute('action') || location.href;
-    if(isBlocked(action)){
-      e.preventDefault();
-      e.stopPropagation();
-      alert("Envoi impossible : le service est indisponible pendant l'examen.");
-    }
-  }, true);
-
-  // --- bouton Réessayer (reste en examen) ---
-  document.getElementById('tryAgain').addEventListener('click', function(){
-    // simple simulation : on affiche le même message et relance l'animation
-    const spinner = document.querySelector('.spinner');
-    spinner.style.animation = 'none';
-    // relancer l'animation (petit hack)
-    void spinner.offsetWidth;
-    spinner.style.animation = null;
-    // message bref
-    alert("Réessai : le compte est toujours en examen.");
-  });
-
-  // --- bouton "C'est une blague" : désactive les blocages ---
-  document.getElementById('reveal').addEventListener('click', function(){
-    // restaurer fetch / XHR originaux
-    window.fetch = _fetch;
-    XMLHttpRequest.prototype.open = _open;
-    XMLHttpRequest.prototype.send = _send;
-    // informer et réduire la carte
-    document.querySelector('.card h1').textContent = "Simulation désactivée";
-    document.querySelector('.card p').textContent = "La simulation a été arrêtée — l'accès aux sites est rétabli localement.";
-    document.querySelector('footer').textContent = "C'était une blague — utilise-la avec précaution.";
-  });
-
-  // --- facultatif : logger dans la console pour les curieux ---
-  console.log("Simulation 'compte en examen' active — domaines bloqués :", blockedDomains.join(", "));
-})();
-</script>
 </body>
 </html>
